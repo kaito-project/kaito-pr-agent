@@ -1,5 +1,6 @@
 <div align="center">
-
+This fork is modified and used by the Kaito project for its GitHub app. See NOTICE for details.
+  
 <div align="center">
 
 <picture>
