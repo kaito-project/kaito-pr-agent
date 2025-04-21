@@ -1,6 +1,10 @@
 FROM python:3.12.3 AS base
 
 WORKDIR /app
+
+ADD LICENSE .
+ADD NOTICE .
+
 ADD pyproject.toml .
 ADD requirements.txt .
 ADD docs docs
