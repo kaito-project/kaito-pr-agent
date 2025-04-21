@@ -1,7 +1,9 @@
 ## Overview
+
 The `review` tool scans the PR code changes, and generates a list of feedbacks about the PR, aiming to aid the reviewing process.
 <br>
 The tool can be triggered automatically every time a new PR is [opened](../usage-guide/automations_and_usage.md#github-app-automatic-tools-when-a-new-pr-is-opened), or can be invoked manually by commenting on any PR:
+
 ```
 /review
 ```
@@ -9,7 +11,6 @@ The tool can be triggered automatically every time a new PR is [opened](../usage
 Note that the main purpose of the `review` tool is to provide the **PR reviewer** with useful feedbacks and insights. The PR author, in contrast, may prefer to save time and focus on the output of the [improve](./improve.md) tool, which provides actionable code suggestions.
 
 (Read more about the different personas in the PR process and how Qodo Merge aims to assist them in our [blog](https://www.codium.ai/blog/understanding-the-challenges-and-pain-points-of-the-pull-request-cycle/))
-
 
 ## Example usage
 
@@ -24,6 +25,7 @@ After ~30 seconds, the tool will generate a review for the PR:
 ![review](https://codium.ai/images/pr_agent/review3.png){width=512}
 
 If you want to edit [configurations](#configuration-options), add the relevant ones to the command:
+
 ```
 /review --pr_reviewer.some_config1=... --pr_reviewer.some_config2=...
 ```
@@ -31,6 +33,7 @@ If you want to edit [configurations](#configuration-options), add the relevant o
 ### Automatic triggering
 
 To run the `review` automatically when a PR is opened, define in a [configuration file](https://qodo-merge-docs.qodo.ai/usage-guide/configuration_options/#wiki-configuration-file):
+
 ```
 [github_app]
 pr_commands = [
@@ -45,7 +48,6 @@ extra_instructions = "..."
 
 - The `pr_commands` lists commands that will be executed automatically when a PR is opened.
 - The `[pr_reviewer]` section contains the configurations for the `review` tool you want to edit (if any).
-
 
 ## Configuration options
 
@@ -114,7 +116,6 @@ extra_instructions = "..."
       </tr>
     </table>
 
-
 ## Usage Tips
 
 !!! tip "General guidelines"
@@ -164,11 +165,6 @@ extra_instructions = "..."
     ```
     Use triple quotes to write multi-line instructions. Use bullet points to make the instructions more readable.
 
-
-
-
 !!! tip  "Code suggestions"
 
     The `review` tool previously included a legacy feature for providing code suggestions (controlled by `--pr_reviewer.num_code_suggestion`). This functionality has been deprecated and replaced by the [`improve`](./improve.md) tool, which offers higher quality and more actionable code suggestions.
-
-    

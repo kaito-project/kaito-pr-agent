@@ -14,11 +14,9 @@ Alternatively, you can access the options page directly using this URL:
 
 <img src="https://codium.ai/images/pr_agent/chrome_ext_options.png" width="256">
 
-
 ### Configuration Options
 
 <img src="https://codium.ai/images/pr_agent/chrome_ext_settings_page.png" width="512">
-
 
 #### API Base Host
 

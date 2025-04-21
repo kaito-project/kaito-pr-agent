@@ -1,5 +1,4 @@
 import os
-
 import litellm
 import openai
 import requests
@@ -31,6 +30,7 @@ class LiteLLMAIHandler(BaseAiHandler):
         self.azure = False
         self.api_base = None
         self.repetition_penalty = None
+        
         if get_settings().get("OPENAI.KEY", None):
             openai.api_key = get_settings().openai.key
             litellm.openai_key = get_settings().openai.key
@@ -97,6 +97,27 @@ class LiteLLMAIHandler(BaseAiHandler):
         if get_settings().get("DEEPINFRA.KEY", None):
             os.environ['DEEPINFRA_API_KEY'] = get_settings().get("DEEPINFRA.KEY")
 
+        # Support mistral models
+        if get_settings().get("MISTRAL.KEY", None):
+            os.environ["MISTRAL_API_KEY"] = get_settings().get("MISTRAL.KEY")
+        
+        # Support codestral models
+        if get_settings().get("CODESTRAL.KEY", None):
+            os.environ["CODESTRAL_API_KEY"] = get_settings().get("CODESTRAL.KEY")
+
+        # Check for Azure AD configuration
+        if get_settings().get("AZURE_AD.CLIENT_ID", None):
+            self.azure = True
+            # Generate access token using Azure AD credentials from settings
+            access_token = self._get_azure_ad_token()
+            litellm.api_key = access_token
+            openai.api_key = access_token
+            
+            # Set API base from settings
+            self.api_base = get_settings().azure_ad.api_base
+            litellm.api_base = self.api_base
+            openai.api_base = self.api_base
+
         # Models that only use user meessage
         self.user_message_only_models = USER_MESSAGE_ONLY_MODELS
 
@@ -108,6 +129,26 @@ class LiteLLMAIHandler(BaseAiHandler):
 
         # Models that support extended thinking
         self.claude_extended_thinking_models = CLAUDE_EXTENDED_THINKING_MODELS
+
+    def _get_azure_ad_token(self):
+        """
+        Generates an access token using Azure AD credentials from settings.
+        Returns:
+            str: The access token
+        """
+        from azure.identity import ClientSecretCredential
+        try:
+            credential = ClientSecretCredential(
+                tenant_id=get_settings().azure_ad.tenant_id,
+                client_id=get_settings().azure_ad.client_id,
+                client_secret=get_settings().azure_ad.client_secret
+            )
+            # Get token for Azure OpenAI service
+            token = credential.get_token("https://cognitiveservices.azure.com/.default")
+            return token.token
+        except Exception as e:
+            get_logger().error(f"Failed to get Azure AD token: {e}")
+            raise
 
     def prepare_logs(self, response, system, user, resp, finish_reason):
         response_log = response.dict().copy()

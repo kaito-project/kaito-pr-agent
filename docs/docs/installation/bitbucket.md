@@ -6,22 +6,22 @@ You can use the Bitbucket Pipeline system to run PR-Agent on every pull request 
 
 ```yaml
 pipelines:
-  pull-requests:
-    "**":
-      - step:
-          name: PR Agent Review
-          image: python:3.12
-          services:
-            - docker
-          script:
-            - docker run -e CONFIG.GIT_PROVIDER=bitbucket -e OPENAI.KEY=$OPENAI_API_KEY -e BITBUCKET.BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN codiumai/pr-agent:latest --pr_url=https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID review
+    pull-requests:
+      '**':
+        - step:
+            name: PR Agent Review
+            image: codiumai/pr-agent:latest
+            script:
+              - pr-agent --pr_url=https://bitbucket.org/$BITBUCKET_WORKSPACE/$BITBUCKET_REPO_SLUG/pull-requests/$BITBUCKET_PR_ID review
 ```
 
 2. Add the following secure variables to your repository under Repository settings > Pipelines > Repository variables.
-   OPENAI_API_KEY: `<your key>`
-   BITBUCKET.AUTH_TYPE: `basic` or `bearer` (default is `bearer`)
-   BITBUCKET.BEARER_TOKEN: `<your token>` (required when auth_type is bearer)
-   BITBUCKET.BASIC_TOKEN: `<your token>` (required when auth_type is basic)
+
+   - CONFIG__GIT_PROVIDER: `bitbucket`
+   - OPENAI__KEY: `<your key>`
+   - BITBUCKET__AUTH_TYPE: `basic` or `bearer` (default is `bearer`)
+   - BITBUCKET__BEARER_TOKEN: `<your token>` (required when auth_type is bearer)
+   - BITBUCKET__BASIC_TOKEN: `<your token>` (required when auth_type is basic)
 
 You can get a Bitbucket token for your repository by following Repository Settings -> Security -> Access Tokens.
 For basic auth, you can generate a base64 encoded token from your username:password combination.
@@ -57,7 +57,7 @@ python cli.py --pr_url https://git.onpreminstanceofbitbucket.com/projects/PROJEC
 
 To run PR-Agent as webhook, build the docker image:
 
-```
+```bash
 docker build . -t codiumai/pr-agent:bitbucket_server_webhook --target bitbucket_server_webhook -f docker/Dockerfile
 docker push codiumai/pr-agent:bitbucket_server_webhook  # Push to your Docker repository
 ```

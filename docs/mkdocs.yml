@@ -39,10 +39,11 @@ nav:
     - 💎 CI Feedback: 'tools/ci_feedback.md'
     - 💎 Similar Code: 'tools/similar_code.md'
     - 💎 Implement: 'tools/implement.md'
+    - 💎 Scan Repo Discussions: 'tools/scan_repo_discussions.md'
   - Core Abilities:
       - 'core-abilities/index.md'
       - Auto best practices: 'core-abilities/auto_best_practices.md'
-      - Code fine-tuning benchmark: 'finetuning_benchmark/index.md'
+      - Pull request benchmark: 'finetuning_benchmark/index.md'
       - Code validation: 'core-abilities/code_validation.md'
       - Compression strategy: 'core-abilities/compression_strategy.md'
       - Dynamic context: 'core-abilities/dynamic_context.md'
@@ -76,12 +77,11 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.indexes
-    - search.suggest
-    - search.highlight
+#    - search.suggest
+#    - search.highlight
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
-    - content.tabs.link
   language: en
   custom_dir: overrides
 
@@ -107,7 +107,7 @@ theme:
 
 plugins:
   - social
-  - search
+#  - search
   - glightbox
 
 extra:

@@ -36,6 +36,10 @@ MAX_TOKENS = {
     'o1': 204800,  # 200K, but may be limited by config.max_model_tokens
     'o3-mini': 204800,  # 200K, but may be limited by config.max_model_tokens
     'o3-mini-2025-01-31': 204800,  # 200K, but may be limited by config.max_model_tokens
+    'o3': 200000,  # 200K, but may be limited by config.max_model_tokens
+    'o3-2025-04-16': 200000,  # 200K, but may be limited by config.max_model_tokens
+    'o4-mini': 200000, # 200K, but may be limited by config.max_model_tokens
+    'o4-mini-2025-04-16': 200000, # 200K, but may be limited by config.max_model_tokens
     'claude-instant-1': 100000,
     'claude-2': 100000,
     'command-nightly': 4096,
@@ -53,8 +57,10 @@ MAX_TOKENS = {
     'vertex_ai/claude-3-5-sonnet-v2@20241022': 100000,
     'vertex_ai/claude-3-7-sonnet@20250219': 200000,
     'vertex_ai/gemini-1.5-pro': 1048576,
+    'vertex_ai/gemini-2.5-pro-preview-03-25': 1048576,
     'vertex_ai/gemini-1.5-flash': 1048576,
     'vertex_ai/gemini-2.0-flash': 1048576,
+    'vertex_ai/gemini-2.5-flash-preview-04-17': 1048576,
     'vertex_ai/gemma2': 8200,
     'gemini/gemini-1.5-pro': 1048576,
     'gemini/gemini-1.5-flash': 1048576,
@@ -108,6 +114,20 @@ MAX_TOKENS = {
     "deepinfra/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B": 128000,
     "deepinfra/deepseek-ai/DeepSeek-R1-Distill-Llama-70B": 128000,
     "deepinfra/deepseek-ai/DeepSeek-R1": 128000,
+    "mistral/mistral-small-latest": 8191,
+    "mistral/mistral-medium-latest": 8191,
+    "mistral/mistral-large-2407": 128000,
+    "mistral/mistral-large-latest": 128000,
+    "mistral/open-mistral-7b": 8191,
+    "mistral/open-mixtral-8x7b": 8191,
+    "mistral/open-mixtral-8x22b": 8191,
+    "mistral/codestral-latest": 8191,
+    "mistral/open-mistral-nemo": 128000,
+    "mistral/open-mistral-nemo-2407": 128000,
+    "mistral/open-codestral-mamba": 256000,
+    "mistral/codestral-mamba-latest": 256000,
+    "codestral/codestral-latest": 8191,
+    "codestral/codestral-2405": 8191,
 }
 
 USER_MESSAGE_ONLY_MODELS = [
@@ -125,12 +145,20 @@ NO_SUPPORT_TEMPERATURE_MODELS = [
     "o1-2024-12-17",
     "o3-mini",
     "o3-mini-2025-01-31",
-    "o1-preview"
+    "o1-preview",
+    "o3",
+    "o3-2025-04-16",
+    "o4-mini",
+    "o4-mini-2025-04-16",
 ]
 
 SUPPORT_REASONING_EFFORT_MODELS = [
     "o3-mini",
-    "o3-mini-2025-01-31"
+    "o3-mini-2025-01-31",
+    "o3",
+    "o3-2025-04-16",
+    "o4-mini",
+    "o4-mini-2025-04-16",
 ]
 
 CLAUDE_EXTENDED_THINKING_MODELS = [

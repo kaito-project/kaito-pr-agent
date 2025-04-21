@@ -1,10 +1,10 @@
-# Qodo Merge Code Fine-tuning Benchmark
+# Qodo Merge Pull Request Benchmark
 
-On coding tasks, the gap between open-source models and top closed-source models such as GPT-4o is significant.
+On coding tasks, the gap between open-source models and top closed-source models such as Claude and GPT is significant.
 <br>
 In practice, open-source models are unsuitable for most real-world code tasks, and require further fine-tuning to produce acceptable results.
 
-_Qodo Merge fine-tuning benchmark_ aims to benchmark open-source models on their ability to be fine-tuned for a coding task.
+_Qodo Merge pull request benchmark_ aims to benchmark models on their ability to be fine-tuned for a coding task.
 Specifically, we chose to fine-tune open-source models on the task of analyzing a pull request, and providing useful feedback and code suggestions.
 
 Here are the results:
@@ -49,7 +49,7 @@ Here are the results:
 - **The best small model** - For small 7B code-dedicated models, the gaps when fine-tuning are much larger. **CodeQWEN 1.5-7B** is by far the best model for fine-tuning.
 - **Base vs. instruct** - For the top model (deepseek), we saw small advantage when starting from the instruct version. However, we recommend testing both versions on each specific task, as the base model is generally considered more suitable for fine-tuning.
 
-## The dataset
+## Dataset
 
 ### Training dataset
 
@@ -91,3 +91,12 @@ why: |
   actionable suggestions, such as changing variable names and adding comments, which are less
   critical for immediate code improvement."
 ```
+
+## Comparing Top Closed-Source Models
+
+Another application of the Pull Request Benchmark is comparing leading closed-source models to determine which performs better at analyzing pull request code.
+
+The evaluation methodology resembles the approach used for evaluating fine-tuned models:
+
+- We ran each model across 200 diverse pull requests, asking them to generate code suggestions using Qodo Merge's `improve` tool
+- A third top model served as judge to determine which response better fulfilled the prompt and would likely be perceived as superior by human users

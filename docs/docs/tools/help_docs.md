@@ -3,9 +3,11 @@
 The `help_docs` tool can answer a free-text question based on a git documentation folder.
 
 It can be invoked manually by commenting on any PR or Issue:
+
 ```
 /help_docs "..."
 ```
+
 Or configured to be triggered automatically when a [new issue is opened](#run-as-a-github-action).
 
 The tool assumes by default that the documentation is located in the root of the repository, at `/docs` folder.
@@ -92,8 +94,8 @@ jobs:
 
 3) Following completion of the remaining steps (such as adding secrets and relevant configurations, such as `repo_url` and `docs_path`) merge this change to your main branch.
 When a new issue is opened, you should see a comment from `github-actions` bot with an auto response, assuming the question is related to the documentation of the repository.
----
 
+---
 
 ## Configuration options
 

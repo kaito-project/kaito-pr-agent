@@ -23,7 +23,7 @@ For open-source projects, Qodo Merge is available for free usage. To install Qod
 
 ## Install Qodo Merge for Bitbucket
 
-###  Bitbucket Cloud
+### Bitbucket Cloud
 
 Qodo Merge for Bitbucket Cloud is available for installation through the following [link](https://bitbucket.org/site/addons/authorize?addon_key=d6df813252c37258)
 
@@ -33,8 +33,7 @@ Qodo Merge for Bitbucket Cloud is available for installation through the followi
 
 To use Qodo Merge application on your private Bitbucket Server, you will need to contact us for starting an [Enterprise](https://www.qodo.ai/pricing/) trial.
 
-
-## Install Qodo Merge for GitLab 
+## Install Qodo Merge for GitLab
 
 ### GitLab Cloud
 

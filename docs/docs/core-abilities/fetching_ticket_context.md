@@ -1,7 +1,9 @@
 # Fetching Ticket Context for PRs
+
 `Supported Git Platforms: GitHub, GitLab, Bitbucket`
 
 ## Overview
+
 Qodo Merge streamlines code review workflows by seamlessly connecting with multiple ticket management systems.
 This integration enriches the review process by automatically surfacing relevant ticket information and context alongside code changes.
 
@@ -27,15 +29,16 @@ Ticket Recognition Requirements:
 - For Jira tickets, you should follow the instructions in [Jira Integration](https://qodo-merge-docs.qodo.ai/core-abilities/fetching_ticket_context/#jira-integration) in order to authenticate with Jira.
 
 ### Describe tool
+
 Qodo Merge will recognize the ticket and use the ticket content (title, description, labels) to provide additional context for the code changes.
 By understanding the reasoning and intent behind modifications, the LLM can offer more insightful and relevant code analysis.
 
 ### Review tool
+
 Similarly to the `describe` tool, the `review` tool will use the ticket content to provide additional context for the code changes.
 
 In addition, this feature will evaluate how well a Pull Request (PR) adheres to its original purpose/intent as defined by the associated ticket or issue mentioned in the PR description.
 Each ticket will be assigned a label (Compliance/Alignment level), Indicates the degree to which the PR fulfills its original purpose, Options: Fully compliant, Partially compliant or Not compliant.
-
 
 ![Ticket Compliance](https://www.qodo.ai/images/pr_agent/ticket_compliance_review.png){width=768}
 
@@ -63,6 +66,7 @@ Since Qodo Merge is integrated with GitHub, it doesn't require any additional co
 We support both Jira Cloud and Jira Server/Data Center.
 
 ### Jira Cloud
+
 There are two ways to authenticate with Jira Cloud:
 
 **1) Jira App Authentication**
@@ -100,7 +104,6 @@ You can create an API token from your Atlassian account:
 jira_api_token = "YOUR_API_TOKEN"
 jira_api_email = "YOUR_EMAIL"
 ```
-
 
 ### Jira Data Center/Server
 
@@ -163,9 +166,67 @@ jira_api_email = "YOUR_EMAIL"
 
 [//]: # (* You will be redirected back to Qodo Merge and you will see a success message.)
 
-
 [//]: # (Personal Access Token &#40;PAT&#41; Authentication)
-Currently, JIRA integration for Data Center/Server is available via Personal Access Token (PAT) Authentication method 
+
+#### Using Basic Authentication for Jira Data Center/Server
+
+You can use your Jira username and password to authenticate with Jira Data Center/Server.
+
+In your Configuration file/Environment variables/Secrets file, add the following lines:
+
+```toml
+jira_api_email = "your_username"
+jira_api_token = "your_password"
+```
+
+(Note that indeed the 'jira_api_email' field is used for the username, and the 'jira_api_token' field is used for the user password.)
+
+##### Validating Basic authentication via Python script
+
+If you are facing issues retrieving tickets in Qodo Merge with Basic auth, you can validate the flow using a Python script.
+This following steps will help you check if the basic auth is working correctly, and if you can access the Jira ticket details:
+
+1. run `pip install jira==3.8.0`
+
+2. run the following Python script (after replacing the placeholders with your actual values):
+
+??? example "Script to validate basic auth"
+
+    ```python
+    from jira import JIRA
+    
+    
+    if __name__ == "__main__":
+        try:
+            # Jira server URL
+            server = "https://..."
+            # Basic auth
+            username = "..."
+            password = "..."
+            # Jira ticket code (e.g. "PROJ-123")
+            ticket_id = "..."
+    
+            print("Initializing JiraServerTicketProvider with JIRA server")
+            # Initialize JIRA client
+            jira = JIRA(
+                server=server,
+                basic_auth=(username, password),
+                timeout=30
+            )
+            if jira:
+                print(f"JIRA client initialized successfully")
+            else:
+                print("Error initializing JIRA client")
+    
+            # Fetch ticket details
+            ticket = jira.issue(ticket_id)
+            print(f"Ticket title: {ticket.fields.summary}")
+    
+        except Exception as e:
+            print(f"Error fetching JIRA ticket details: {e}")
+    ```
+
+#### Using a Personal Access Token (PAT) for Jira Data Center/Server
 
 1. Create a [Personal Access Token (PAT)](https://confluence.atlassian.com/enterprise/using-personal-access-tokens-1026032365.html) in your Jira account
 2. In your Configuration file/Environment variables/Secrets file, add the following lines:
@@ -176,9 +237,9 @@ jira_base_url = "YOUR_JIRA_BASE_URL" # e.g. https://jira.example.com
 jira_api_token = "YOUR_API_TOKEN"
 ```
 
-#### Validating PAT token via Python script
+##### Validating PAT token via Python script
 
-If you are facing issues retrieving tickets in Qodo Merge with PAT token, you can validate the flow using a Python script. 
+If you are facing issues retrieving tickets in Qodo Merge with PAT token, you can validate the flow using a Python script.
 This following steps will help you check if the token is working correctly, and if you can access the Jira ticket details:
 
 1. run `pip install jira==3.8.0`

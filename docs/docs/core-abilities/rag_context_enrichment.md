@@ -6,7 +6,6 @@
     - RAG is available only for Qodo enterprise plan users, with single tenant or on-premises setup.
     - Database setup and codebase indexing must be completed before proceeding. [Contact support](https://www.qodo.ai/contact/) for more information.
 
-
 ## Overview
 
 ### What is RAG Context Enrichment?
@@ -17,13 +16,13 @@ A feature that enhances AI analysis by retrieving and referencing relevant code 
 
 Using Retrieval-Augmented Generation (RAG), it searches your configured repositories for contextually relevant code segments, enriching pull request (PR) insights and accelerating review accuracy.
 
-
 ## Getting started
 
 ### Configuration options
 
 In order to enable the RAG feature, add the following lines to your configuration file:
-``` toml
+
+```toml
 [rag_arguments]
 enable_rag=true
 ```
@@ -45,7 +44,7 @@ enable_rag=true
 
 #### 1\. The `/review` Tool
 
-The [`/review`](https://qodo-merge-docs.qodo.ai/tools/review/) tool offers the _Focus area from RAG data_ which contains feedback based on the RAG references analysis. 
+The [`/review`](https://qodo-merge-docs.qodo.ai/tools/review/) tool offers the _Focus area from RAG data_ which contains feedback based on the RAG references analysis.
 The complete list of references found relevant to the PR will be shown in the _References_ section, helping developers understand the broader context by exploring the provided references.
 
 ![References](https://codium.ai/images/pr_agent/rag_review.png){width=640}
@@ -64,15 +63,16 @@ The _References_ section displays the additional repository content consulted to
 
 ![References](https://codium.ai/images/pr_agent/rag_ask.png){width=640}
 
-
 ## Limitations
 
 ### Querying the codebase presents significant challenges
+
 - **Search Method**: RAG uses natural language queries to find semantically relevant code sections
 - **Result Quality**: No guarantee that RAG results will be useful for all queries
 - **Scope Recommendation**: To reduce noise, focus on the PR repository rather than searching across multiple repositories
 
 ### This feature has several requirements and restrictions
+
 - **Codebase**: Must be properly indexed for search functionality
 - **Security**: Requires secure and private indexed codebase implementation
 - **Deployment**: Only available for Qodo Merge Enterprise plan using single tenant or on-premises setup

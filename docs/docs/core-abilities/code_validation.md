@@ -1,4 +1,5 @@
 ## Introduction
+
 The Git environment usually represents the final stage before code enters production. Hence, Detecting bugs and issues during the review process is critical.
 
 The [`improve`](https://qodo-merge-docs.qodo.ai/tools/improve/) tool provides actionable code suggestions for your pull requests, aiming to help detect and fix bugs and problems.
@@ -32,7 +33,7 @@ Read more about this process in the [self-reflection](https://qodo-merge-docs.qo
 ## Conclusion
 
 The validation methods described above enhance the reliability of code suggestions and help PR authors determine which suggestions are safer to apply in the Git environment.
-Of course, additional factors should be considered, such as suggestion complexity and potential code impact. 
+Of course, additional factors should be considered, such as suggestion complexity and potential code impact.
 
 Human judgment remains essential. After clicking 'apply', Qodo Merge still presents the 'before' and 'after' code snippets for review, allowing you to assess the changes before finalizing the commit.
 

@@ -7,26 +7,44 @@ Users can configure Qodo Merge to use a specific model by editing the [configura
 The models supported by Qodo Merge are:
 
 - `claude-3-7-sonnet` (default)
-- `o3-mini`
-- `gpt-4o`
+- `o4-mini`
+- `gpt-4.1`
+- `gemini-2.5-pro`
+- `gemini-2.5-flash`
 - `deepseek/r1`
 
-To restrict Qodo Merge to using only `o3-mini`, add this setting:
-```
+To restrict Qodo Merge to using only `o4-mini`, add this setting:
+
+```toml
 [config]
-model="o3-mini"
+model="o4-mini"
 ```
 
-To restrict Qodo Merge to using only `GPT-4o`, add this setting:
-```
+To restrict Qodo Merge to using only `GPT-4.1`, add this setting:
+
+```toml
 [config]
-model="gpt-4o"
+model="gpt-4.1"
 ```
+
+To restrict Qodo Merge to using only `gemini-2.5-pro`, add this setting:
+
+```toml
+[config]
+model="gemini-2.5-pro"
+```
+
+To restrict Qodo Merge to using only `gemini-2.5-flash`, add this setting:
+
+```toml
+[config]
+model="gemini-2.5-flash"
+```
+
 
 To restrict Qodo Merge to using only `deepseek-r1` us-hosted, add this setting:
-```
+
+```toml
 [config]
 model="deepseek/r1"
 ```
-
-

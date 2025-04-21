@@ -6,9 +6,9 @@
 
 [config]
 # models
-model="o3-mini"
-fallback_models=["gpt-4o-2024-11-20"]
-#model_weak="gpt-4o-mini-2024-07-18" # optional, a weaker model to use for some easier tasks
+model="o4-mini"
+fallback_models=["gpt-4.1"]
+#model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
 # CLI
 git_provider="github"
 publish_output=true
@@ -182,6 +182,7 @@ class_name = ""        # in case there are several methods with the same name in
 push_changelog_changes=false
 extra_instructions = ""
 add_pr_link=true
+skip_ci_on_push=true
 
 [pr_analyze] # /analyze #
 enable_help_text=true
