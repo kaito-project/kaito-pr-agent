@@ -8,6 +8,7 @@
 # models
 model="o4-mini"
 fallback_models=["gpt-4.1"]
+#model_reasoning="o4-mini" # dedictated reasoning model for self-reflection
 #model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
 # CLI
 git_provider="github"
@@ -35,8 +36,8 @@ model_token_count_estimate_factor=0.3 # factor to increase the token count estim
 # patch extension logic
 patch_extension_skip_types =[".md",".txt"]
 allow_dynamic_context=true
-max_extra_lines_before_dynamic_context = 8 # will try to include up to 10 extra lines before the hunk in the patch, until we reach an enclosing function or class
-patch_extra_lines_before = 3 # Number of extra lines (+3 default ones) to include before each hunk in the patch
+max_extra_lines_before_dynamic_context = 10 # will try to include up to 10 extra lines before the hunk in the patch, until we reach an enclosing function or class
+patch_extra_lines_before = 5 # Number of extra lines (+3 default ones) to include before each hunk in the patch
 patch_extra_lines_after = 1 # Number of extra lines (+3 default ones) to include after each hunk in the patch
 secret_provider=""
 cli_mode=false
@@ -119,10 +120,11 @@ async_ai_calls=true
 
 [pr_questions] # /ask #
 enable_help_text=false
+use_conversation_history=true
 
 
 [pr_code_suggestions] # /improve #
-max_context_tokens=16000
+max_context_tokens=24000
 #
 commitable_code_suggestions = false
 dual_publishing_score_threshold=-1 # -1 to disable, [0-10] to set the threshold (>=) for publishing a code suggestion both in a table and as commitable
@@ -143,7 +145,7 @@ new_score_mechanism_th_high=9
 new_score_mechanism_th_medium=7
 # params for '/improve --extended' mode
 auto_extended_mode=true
-num_code_suggestions_per_chunk=3
+num_code_suggestions_per_chunk=4
 max_number_of_calls = 3
 parallel_calls = true
 

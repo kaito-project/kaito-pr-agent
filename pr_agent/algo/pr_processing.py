@@ -25,7 +25,7 @@ from pr_agent.algo.git_patch_processing import (
 from pr_agent.algo.language_handler import sort_files_by_main_languages
 from pr_agent.algo.token_handler import TokenHandler
 from pr_agent.algo.types import EDIT_TYPE, FilePatchInfo
-from pr_agent.algo.utils import ModelType, clip_tokens, get_max_tokens, get_weak_model
+from pr_agent.algo.utils import ModelType, clip_tokens, get_max_tokens, get_model
 from pr_agent.config_loader import get_settings
 from pr_agent.git_providers.git_provider import GitProvider
 from pr_agent.log import get_logger
@@ -352,7 +352,11 @@ async def retry_with_fallback_models(f: Callable, model_type: ModelType = ModelT
 
 def _get_all_models(model_type: ModelType = ModelType.REGULAR) -> List[str]:
     if model_type == ModelType.WEAK:
-        model = get_weak_model()
+        model = get_model('model_weak')
+    elif model_type == ModelType.REASONING:
+        model = get_model('model_reasoning')
+    elif model_type == ModelType.REGULAR:
+        model = get_settings().config.model
     else:
         model = get_settings().config.model
     fallback_models = get_settings().config.fallback_models

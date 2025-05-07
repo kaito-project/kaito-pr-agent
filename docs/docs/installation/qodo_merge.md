@@ -1,9 +1,21 @@
 Qodo Merge is a versatile application compatible with GitHub, GitLab, and BitBucket, hosted by QodoAI.
 See [here](https://qodo-merge-docs.qodo.ai/overview/pr_agent_pro/) for more details about the benefits of using Qodo Merge.
 
-A complimentary two-week trial is provided to all new users (with three additional grace usages). Following the trial period, user licenses (seats) are required for continued access.
-To purchase user licenses, please visit our [pricing page](https://www.qodo.ai/pricing/).
-Once subscribed, users can seamlessly deploy the application across any of their code repositories.
+## Trial Period and Licensing
+
+### Cloud Users with Teams Account
+
+A complimentary two-week trial is provided to all new users (with three additional grace usages). When the trial period ends, users will stop receiving feedback from Qodo Merge.
+
+Following the trial period, user licenses (seats) are required for continued access. Each user requires an individual seat license.
+After purchasing seats, the team owner can assign them to specific users through the management portal.
+
+With an assigned seat, users can seamlessly deploy the application across any of their code repositories.
+
+### Enterprise Account
+
+For organizations who require an Enterprise account, please [contact](https://www.qodo.ai/contact/#pricing) us to initiate a trial period, and to discuss pricing and licensing options.
+
 
 ## Install Qodo Merge for GitHub
 

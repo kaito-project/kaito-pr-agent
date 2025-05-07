@@ -172,8 +172,8 @@ To use [Google AI Studio](https://aistudio.google.com/) models, set the relevant
 
 ```toml
 [config] # in configuration.toml
-model="google_ai_studio/gemini-1.5-flash"
-fallback_models=["google_ai_studio/gemini-1.5-flash"]
+model="gemini/gemini-1.5-flash"
+fallback_models=["gemini/gemini-1.5-flash"]
 
 [google_ai_studio] # in .secrets.toml
 gemini_api_key = "..."

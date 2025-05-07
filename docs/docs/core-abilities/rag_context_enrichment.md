@@ -1,6 +1,6 @@
 # RAG Context Enrichment 💎
 
-`Supported Git Platforms: GitHub`
+`Supported Git Platforms: GitHub, Bitbucket Data Center`
 
 !!! info "Prerequisites"
     - RAG is available only for Qodo enterprise plan users, with single tenant or on-premises setup.
@@ -42,26 +42,25 @@ enable_rag=true
 
 ### Applications
 
-#### 1\. The `/review` Tool
+RAG capability is exclusively available in the following tools:
 
-The [`/review`](https://qodo-merge-docs.qodo.ai/tools/review/) tool offers the _Focus area from RAG data_ which contains feedback based on the RAG references analysis.
-The complete list of references found relevant to the PR will be shown in the _References_ section, helping developers understand the broader context by exploring the provided references.
+=== "`/review`"
+    The [`/review`](https://qodo-merge-docs.qodo.ai/tools/review/) tool offers the _Focus area from RAG data_ which contains feedback based on the RAG references analysis.
+    The complete list of references found relevant to the PR will be shown in the _References_ section, helping developers understand the broader context by exploring the provided references.
 
-![References](https://codium.ai/images/pr_agent/rag_review.png){width=640}
+    ![RAGed review tool](https://codium.ai/images/pr_agent/rag_review.png){width=640}
 
-#### 2\. The `/implement` Tool
+=== "`/implement`"
+    The [`/implement`](https://qodo-merge-docs.qodo.ai/tools/implement/) tool utilizes the RAG feature to provide comprehensive context of the repository codebase, allowing it to generate more refined code output.
+    The _References_ section contains links to the content used to support the code generation.
 
-The [`/implement`](https://qodo-merge-docs.qodo.ai/tools/implement/) tool utilizes the RAG feature to provide comprehensive context of the repository codebase, allowing it to generate more refined code output.
-The _References_ section contains links to the content used to support the code generation.
+    ![RAGed implement tool](https://codium.ai/images/pr_agent/rag_implement.png){width=640}
 
-![References](https://codium.ai/images/pr_agent/rag_implement.png){width=640}
+=== "`/ask`"
+    The [`/ask`](https://qodo-merge-docs.qodo.ai/tools/ask/) tool can access broader repository context through the RAG feature when answering questions that go beyond the PR scope alone.
+    The _References_ section displays the additional repository content consulted to formulate the answer.
 
-#### 3\. The `/ask` Tool
-
-The [`/ask`](https://qodo-merge-docs.qodo.ai/tools/ask/) tool can access broader repository context through the RAG feature when answering questions that go beyond the PR scope alone.
-The _References_ section displays the additional repository content consulted to formulate the answer.
-
-![References](https://codium.ai/images/pr_agent/rag_ask.png){width=640}
+    ![RAGed ask tool](https://codium.ai/images/pr_agent/rag_ask.png){width=640}
 
 ## Limitations
 

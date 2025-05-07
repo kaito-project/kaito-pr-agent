@@ -15,7 +15,7 @@ Qodo Merge is designed for companies and teams that require additional features 
 
 ### Additional features
 
-Here are some of the additional features and capabilities that Qodo Merge offers:
+Here are some of the additional features and capabilities that Qodo Merge offers, and are not available in the open-source version of PR-Agent:
 
 | Feature                                                                                                              | Description                                                                                                                                            |
 | -------------------------------------------------------------------------------------------------------------------- |--------------------------------------------------------------------------------------------------------------------------------------------------------|

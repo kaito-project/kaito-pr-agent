@@ -45,6 +45,17 @@ publish_labels = true
 - The `pr_commands` lists commands that will be executed automatically when a PR is opened.
 - The `[pr_description]` section contains the configurations for the `describe` tool you want to edit (if any).
 
+## Preserving the original user description
+
+By default, Qodo Merge preserves your original PR description by placing it above the generated content.
+This requires including your description during the initial PR creation.
+Be aware that if you edit the description while the automated tool is running, a race condition may occur, potentially causing your original description to be lost.
+
+When updating PR descriptions, the `/describe` tool considers everything above the "PR Type" field as user content and will preserve it.
+Everything below this marker is treated as previously auto-generated content and will be replaced.
+
+![Describe comment](https://codium.ai/images/pr_agent/pr_description_user_description.png){width=512}
+
 ## Configuration options
 
 !!! example "Possible configurations"

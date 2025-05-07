@@ -16,7 +16,7 @@ description = "QodoAI PR-Agent aims to help efficiently review and handle pull r
 readme = "README.md"
 requires-python = ">=3.12"
 keywords = ["AI", "Agents", "Pull Request", "Automation", "Code Review"]
-license = { name = "Apache 2.0", file = "LICENSE" }
+license = "Apache-2.0"
 
 classifiers = [
   "Intended Audience :: Developers",

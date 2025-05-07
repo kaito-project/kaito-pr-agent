@@ -77,8 +77,8 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.indexes
-#    - search.suggest
-#    - search.highlight
+    - search.suggest
+    - search.highlight
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
@@ -107,7 +107,7 @@ theme:
 
 plugins:
   - social
-#  - search
+  - search
   - glightbox
 
 extra:
@@ -149,6 +149,8 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
   - toc:
       title: On this page
       toc_depth: 3
