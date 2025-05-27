@@ -3,6 +3,6 @@ NOTICE:
 This software contains code adapted from qodo-ai/pr-agent
 (https://github.com/qodo-ai/pr-agent), licensed under 
 Apache License 2.0. Modifications include customizations specific 
-to Kaito PR Reviewer (https://github.com/kaito-project/kaito).
+to Kaito PR Reviewer (https://github.com/kaito-project/kaito-pr-agent).
 
 Refer to LICENSE file for full license text.

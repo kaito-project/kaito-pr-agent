@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pr-agent-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pr-agent-app
+  template:
+    metadata:
+      labels:
+        app: pr-agent-app
+    spec:
+      containers:
+        - name: pr-agent-app
+          image: <ACR_LINK>/kaito-pr-agent:<TAG_HERE>
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          ports:
+            - containerPort: 3000
+          # Mount secrets volume
+          volumeMounts:
+            - mountPath: "/app/pr_agent/settings_prod/.secrets.toml"
+              subPath: .secrets.toml
+              name: secrets-volume
+            - mountPath: "/app/pr_agent/settings_prod/allowed_repos.toml"
+              subPath: allowed_repos.toml
+              name: pr-agent-config-volume
+      volumes:
+        - name: secrets-volume
+          secret:
+            secretName: kaito-pr-agent-secrets
+        - name: pr-agent-config-volume
+          configMap:
+            name: pr-agent-config

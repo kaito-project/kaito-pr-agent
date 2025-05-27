@@ -1,0 +1,47 @@
+apiVersion: alb.networking.azure.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: pr-agent-healthcheck
+  namespace: default
+spec:
+  targetRef:
+    group: ""
+    kind: Service
+    name: pr-agent-service
+  default:
+    interval: 10s
+    timeout: 5s
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    port: 80
+    http:
+      path: /
+      match:
+        statusCodes: 
+        - start: 200
+          end: 200
+    useTLS: false
+
+# apiVersion: alb.networking.azure.io/v1
+# kind: HealthCheckPolicy
+# metadata:
+#   name: nginx-healthcheck
+#   namespace: default
+# spec:
+#   targetRef:
+#     group: ""
+#     kind: Service
+#     name: nginx-test-service
+#   default:
+#     interval: 10s
+#     timeout: 5s
+#     healthyThreshold: 2
+#     unhealthyThreshold: 3
+#     port: 80
+#     http:
+#       path: /
+#       match:
+#         statusCodes:
+#         - start: 200
+#           end: 499
+#     useTLS: false
