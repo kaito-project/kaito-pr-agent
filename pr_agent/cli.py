@@ -99,7 +99,13 @@ def run(inargs=None, args=None):
         if get_settings().litellm.get("enable_callbacks", False):
             # There may be additional events on the event queue from the run above. If there are give them time to complete.
             get_logger().debug("Waiting for event queue to complete")
-            await asyncio.wait([task for task in asyncio.all_tasks() if task is not asyncio.current_task()])
+            tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+            if tasks:
+                _, pending = await asyncio.wait(tasks, timeout=30)
+                if pending:
+                    get_logger().warning(
+                        f"{len(pending)} callback tasks({[task.get_coro() for task in pending]}) did not complete within timeout"
+                    )
 
         return result
 

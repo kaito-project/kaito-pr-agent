@@ -50,7 +50,7 @@ glob = ['*.py']
 And to ignore Python files in all PRs using `regex` pattern, set in a configuration file:
 
 ```
-[regex]
+[ignore]
 regex = ['.*\.py$']
 ```
 
@@ -164,6 +164,7 @@ Qodo Merge allows you to automatically ignore certain PRs based on various crite
 
 - PRs with specific titles (using regex matching)
 - PRs between specific branches (using regex matching)
+- PRs from specific repositories (using regex matching)
 - PRs not from specific folders
 - PRs containing specific labels
 - PRs opened by specific users
@@ -172,7 +173,7 @@ Qodo Merge allows you to automatically ignore certain PRs based on various crite
 
 To ignore PRs with a specific title such as "[Bump]: ...", you can add the following to your `configuration.toml` file:
 
-```
+```toml
 [config]
 ignore_pr_title = ["\\[Bump\\]"]
 ```
@@ -183,7 +184,7 @@ Where the `ignore_pr_title` is a list of regex patterns to match the PR title yo
 
 To ignore PRs from specific source or target branches, you can add the following to your `configuration.toml` file:
 
-```
+```toml
 [config]
 ignore_pr_source_branches = ['develop', 'main', 'master', 'stage']
 ignore_pr_target_branches = ["qa"]
@@ -191,6 +192,18 @@ ignore_pr_target_branches = ["qa"]
 
 Where the `ignore_pr_source_branches` and `ignore_pr_target_branches` are lists of regex patterns to match the source and target branches you want to ignore.
 They are not mutually exclusive, you can use them together or separately.
+
+### Ignoring PRs from specific repositories
+
+To ignore PRs from specific repositories, you can add the following to your `configuration.toml` file:
+
+```toml
+[config]
+ignore_repositories = ["my-org/my-repo1", "my-org/my-repo2"]
+```
+
+Where the `ignore_repositories` is a list of regex patterns to match the repositories you want to ignore. This is useful when you have multiple repositories and want to exclude certain ones from analysis.
+
 
 ### Ignoring PRs not from specific folders
 

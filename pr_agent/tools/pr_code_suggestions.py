@@ -280,14 +280,6 @@ class PRCodeSuggestions:
                 up_to_commit_txt = f" up to commit {match.group(0)[4:-3].strip()}"
             return up_to_commit_txt
 
-        if isinstance(git_provider, AzureDevopsProvider): # get_latest_commit_url is not supported yet
-            if progress_response:
-                git_provider.edit_comment(progress_response, pr_comment)
-                new_comment = progress_response
-            else:
-                new_comment = git_provider.publish_comment(pr_comment)
-            return new_comment
-
         history_header = f"#### Previous suggestions\n"
         last_commit_num = git_provider.get_latest_commit_url().split('/')[-1][:7]
         if only_fold: # A user clicked on the 'self-review' checkbox

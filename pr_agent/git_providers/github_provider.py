@@ -109,7 +109,7 @@ class GithubProvider(GitProvider):
                 parsed_url = urlparse(given_url)
                 repo_path = (parsed_url.path.split('.git')[0])[1:] # /<owner>/<repo>.git -> <owner>/<repo>
             if not repo_path:
-                get_logger().error(f"url is neither an issues url nor a pr url nor a valid git url: {given_url}. Returning empty result.")
+                get_logger().error(f"url is neither an issues url nor a PR url nor a valid git url: {given_url}. Returning empty result.")
                 return ""
             return repo_path
         except Exception as e:

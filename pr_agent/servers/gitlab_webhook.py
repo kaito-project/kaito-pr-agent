@@ -99,9 +99,19 @@ def is_draft(data) -> bool:
 def is_draft_ready(data) -> bool:
     try:
         if 'draft' in data.get('changes', {}):
-            if data['changes']['draft']['previous'] == 'true' and data['changes']['draft']['current'] == 'false':
+            # Handle both boolean values and string values for compatibility
+            previous = data['changes']['draft']['previous']
+            current = data['changes']['draft']['current']
+
+            # Convert to boolean if they're strings
+            if isinstance(previous, str):
+                previous = previous.lower() == 'true'
+            if isinstance(current, str):
+                current = current.lower() == 'true'
+
+            if previous is True and current is False:
                 return True
-            
+
         # for gitlab server version before 16
         elif 'title' in data.get('changes', {}):
             if 'Draft:' in data['changes']['title']['previous'] and 'Draft:' not in data['changes']['title']['current']:
@@ -116,6 +126,14 @@ def should_process_pr_logic(data) -> bool:
             return False
         title = data['object_attributes'].get('title')
         sender = data.get("user", {}).get("username", "")
+        repo_full_name = data.get('project', {}).get('path_with_namespace', "")
+
+        # logic to ignore PRs from specific repositories
+        ignore_repos = get_settings().get("CONFIG.IGNORE_REPOSITORIES", [])
+        if ignore_repos and repo_full_name:
+            if any(re.search(regex, repo_full_name) for regex in ignore_repos):
+                get_logger().info(f"Ignoring MR from repository '{repo_full_name}' due to 'config.ignore_repositories' setting")
+                return False
 
         # logic to ignore PRs from specific users
         ignore_pr_users = get_settings().get("CONFIG.IGNORE_PR_AUTHORS", [])

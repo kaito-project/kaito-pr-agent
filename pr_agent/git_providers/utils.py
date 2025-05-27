@@ -19,8 +19,7 @@ from dynaconf import Dynaconf
 from starlette_context import context
 
 from pr_agent.config_loader import get_settings
-from pr_agent.git_providers import (get_git_provider,
-                                    get_git_provider_with_context)
+from pr_agent.git_providers import get_git_provider_with_context
 from pr_agent.log import get_logger
 
 

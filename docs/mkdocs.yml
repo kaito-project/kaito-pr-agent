@@ -20,6 +20,7 @@ nav:
     - Managing Mail Notifications: 'usage-guide/mail_notifications.md'
     - Changing a Model: 'usage-guide/changing_a_model.md'
     - Additional Configurations: 'usage-guide/additional_configurations.md'
+    - Frequently Asked Questions: 'faq/index.md'
     - 💎 Qodo Merge Models: 'usage-guide/qodo_merge_models.md'
   - Tools:
     - 'tools/index.md'
@@ -43,12 +44,12 @@ nav:
   - Core Abilities:
       - 'core-abilities/index.md'
       - Auto best practices: 'core-abilities/auto_best_practices.md'
-      - Pull request benchmark: 'finetuning_benchmark/index.md'
       - Code validation: 'core-abilities/code_validation.md'
       - Compression strategy: 'core-abilities/compression_strategy.md'
       - Dynamic context: 'core-abilities/dynamic_context.md'
       - Fetching ticket context: 'core-abilities/fetching_ticket_context.md'
       - Impact evaluation: 'core-abilities/impact_evaluation.md'
+      - Incremental Update: 'core-abilities/incremental_update.md'
       - Interactivity: 'core-abilities/interactivity.md'
       - Local and global metadata: 'core-abilities/metadata.md'
       - RAG context enrichment: 'core-abilities/rag_context_enrichment.md'
@@ -59,8 +60,10 @@ nav:
       - Features: 'chrome-extension/features.md'
       - Data Privacy: 'chrome-extension/data_privacy.md'
       - Options: 'chrome-extension/options.md'
-  - FAQ:
-      - FAQ: 'faq/index.md'
+  - PR Benchmark:
+      - PR Benchmark: 'pr_benchmark/index.md'
+  - Recent Updates:
+      - Recent Updates: 'recent_updates/index.md'
   - AI Docs Search: 'ai_search/index.md'
 #  - Code Fine-tuning Benchmark: 'finetuning_benchmark/index.md'
 

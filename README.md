@@ -28,17 +28,6 @@ PR-Agent aims to help efficiently review and handle pull requests, by providing 
 </a>
 </div>
 
-[//]: # (### [Documentation]&#40;https://qodo-merge-docs.qodo.ai/&#41;)
-
-[//]: # ()
-[//]: # (- See the [Installation Guide]&#40;https://qodo-merge-docs.qodo.ai/installation/&#41; for instructions on installing PR-Agent on different platforms.)
-
-[//]: # ()
-[//]: # (- See the [Usage Guide]&#40;https://qodo-merge-docs.qodo.ai/usage-guide/&#41; for instructions on running PR-Agent tools via different interfaces, such as CLI, PR Comments, or by automatically triggering them when a new PR is opened.)
-
-[//]: # ()
-[//]: # (- See the [Tools Guide]&#40;https://qodo-merge-docs.qodo.ai/tools/&#41; for a detailed description of the different tools, and the available configurations for each tool.)
-
 ## Table of Contents
 
 - [News and Updates](#news-and-updates)
@@ -53,6 +42,12 @@ PR-Agent aims to help efficiently review and handle pull requests, by providing 
 - [Links](#links)
 
 ## News and Updates
+
+## May 17, 2025
+
+- v0.29 was [released](https://github.com/qodo-ai/pr-agent/releases)
+- `Qodo Merge Pull Request Benchmark` was [released](https://qodo-merge-docs.qodo.ai/pr_benchmark/). This benchmark  evaluates and compares the performance of LLMs in analyzing pull request code.
+- `Recent Updates and Future Roadmap` page was added to the [Qodo Merge Docs](https://qodo-merge-docs.qodo.ai/recent_updates/)
 
 ## Apr 30, 2025
 
@@ -69,22 +64,6 @@ New tool for Qodo Merge 💎 - `/scan_repo_discussions`.
 <img width="635" alt="image" src="https://codium.ai/images/pr_agent/scan_repo_discussions_2.png" />
 
 Read more about it [here](https://qodo-merge-docs.qodo.ai/tools/scan_repo_discussions/).
-
-## Apr 14, 2025
-
-GPT-4.1 is out. And it's quite good on coding tasks...
-
-https://openai.com/index/gpt-4-1/
-
-<img width="512" alt="image" src="https://github.com/user-attachments/assets/a8f4c648-a058-4bdc-9825-2a4bb71a23e5" />
-
-## March 28, 2025
-
-A new version, v0.28, was released. See release notes [here](https://github.com/qodo-ai/pr-agent/releases/tag/v0.28).
-
-This version includes a new tool, [Help Docs](https://qodo-merge-docs.qodo.ai/tools/help_docs/), which can answer free-text questions based on a documentation folder.
-
-`/help_docs` is now being used to provide immediate automatic feedback to any user who [opens an issue](https://github.com/qodo-ai/pr-agent/issues/1608#issue-2897328825) on PR-Agent's open-source project
 
 ## Overview
 

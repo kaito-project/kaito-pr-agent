@@ -55,6 +55,7 @@ ignore_pr_target_branches = [] # a list of regular expressions of target branche
 ignore_pr_source_branches = [] # a list of regular expressions of source branches to ignore from PR agent when an PR is created
 ignore_pr_labels = [] # labels to ignore from PR agent when an PR is created
 ignore_pr_authors = [] # authors to ignore from PR agent when an PR is created
+ignore_repositories = [] # a list of regular expressions of repository full names (e.g. "org/repo") to ignore from PR agent processing
 #
 is_auto_command = false # will be auto-set to true if the command is triggered by an automation
 enable_ai_metadata = false # will enable adding ai metadata
@@ -80,6 +81,7 @@ require_ticket_analysis_review=true
 # general options
 persistent_comment=true
 extra_instructions = ""
+num_max_findings = 3
 final_update_message = true
 # review labels
 enable_review_labels_security=true

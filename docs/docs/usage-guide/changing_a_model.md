@@ -16,6 +16,23 @@ You can give parameters via a configuration file, or from environment variables.
     See [litellm documentation](https://litellm.vercel.app/docs/proxy/quick_start#supported-llms) for the environment variables needed per model, as they may vary and change over time. Our documentation per-model may not always be up-to-date with the latest changes.
     Failing to set the needed keys of a specific model will usually result in litellm not identifying the model type, and failing to utilize it.
 
+### OpenAI like API
+To use an OpenAI like API, set the following in your `.secrets.toml` file:
+
+```toml
+[openai]
+api_base = "https://api.openai.com/v1"
+api_key = "sk-..."
+```
+
+or use the environment variables (make sure to use double underscores `__`):
+
+```bash
+OPENAI__API_BASE=https://api.openai.com/v1
+OPENAI__KEY=sk-...
+```
+
+
 ### Azure
 
 To use Azure, set in your `.secrets.toml` (working from CLI), or in the GitHub `Settings > Secrets and variables` (working from GitHub App or GitHub Action):
@@ -277,6 +294,22 @@ key = "..." # your Codestral api key
 ```
 
 (you can obtain a Codestral key from [here](https://console.mistral.ai/codestral))
+
+### Openrouter
+
+To use model from Openrouter, for example, set:
+
+```toml
+[config] # in configuration.toml 
+model="openrouter/anthropic/claude-3.7-sonnet"
+fallback_models=["openrouter/deepseek/deepseek-chat"]
+custom_model_max_tokens=20000
+
+[openrouter]  # in .secrets.toml or passed an environment variable openrouter__key
+key = "..." # your openrouter api key
+```
+
+(you can obtain an Openrouter API key from [here](https://openrouter.ai/settings/keys))
 
 ### Custom models
 

@@ -1,20 +1,22 @@
-The different tools and sub-tools used by Qodo Merge are adjustable via the **[configuration file](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml)**.
+The different tools and sub-tools used by Qodo Merge are adjustable via a Git configuration file.
+There are three main ways to set persistent configurations:
 
-In addition to general configuration options, each tool has its own configurations. For example, the `review` tool will use parameters from the [pr_reviewer](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml#L16) section in the configuration file.
-See the [Tools Guide](https://qodo-merge-docs.qodo.ai/tools/) for a detailed description of the different tools and their configurations.
-
-There are three ways to set persistent configurations:
-
-1. Wiki configuration page 💎
-2. Local configuration file
-3. Global configuration file 💎
+1. [Wiki](https://qodo-merge-docs.qodo.ai/usage-guide/configuration_options/#wiki-configuration-file) configuration page 💎
+2. [Local](https://qodo-merge-docs.qodo.ai/usage-guide/configuration_options/#local-configuration-file) configuration file
+3. [Global](https://qodo-merge-docs.qodo.ai/usage-guide/configuration_options/#global-configuration-file) configuration file 💎
 
 In terms of precedence, wiki configurations will override local configurations, and local configurations will override global configurations.
 
-!!! tip "Tip1: edit only what you need"
+
+For a list of all possible configurations, see the [configuration options](https://github.com/qodo-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml/) page.
+In addition to general configuration options, each tool has its own configurations. For example, the `review` tool will use parameters from the [pr_reviewer](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml#L16) section in the configuration file.
+
+!!! tip "Tip1: Edit only what you need"
     Your configuration file should be minimal, and edit only the relevant values. Don't copy the entire configuration options, since it can lead to legacy problems when something changes.
-!!! tip "Tip2: show relevant configurations"
-    If you set `config.output_relevant_configurations=true`, each tool will also output in a collapsible section its relevant configurations. This can be useful for debugging, or getting to know the configurations better.
+!!! tip "Tip2: Show relevant configurations"
+    If you set `config.output_relevant_configurations` to True, each tool will also output in a collapsible section its relevant configurations. This can be useful for debugging, or getting to know the configurations better.
+
+
 
 ## Wiki configuration file 💎
 
@@ -39,7 +41,7 @@ Qodo Merge will know to remove the surrounding quotes when reading the configura
 
 `Platforms supported: GitHub, GitLab, Bitbucket, Azure DevOps`
 
-By uploading a local `.pr_agent.toml` file to the root of the repo's default branch, you can edit and customize any configuration parameter. Note that you need to upload `.pr_agent.toml` prior to creating a PR, in order for the configuration to take effect.
+By uploading a local `.pr_agent.toml` file to the root of the repo's default branch, you can edit and customize any configuration parameter. Note that you need to upload or update `.pr_agent.toml` before using the PR Agent tools (either at PR creation or via manual trigger) for the configuration to take effect.
 
 For example, if you set in `.pr_agent.toml`:
 
