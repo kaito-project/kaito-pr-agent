@@ -68,6 +68,8 @@ auto_approve_for_no_suggestions=false # If true, the PR will be auto-approved if
 enable_claude_extended_thinking = false # Set to true to enable extended thinking feature
 extended_thinking_budget_tokens = 2048
 extended_thinking_max_output_tokens = 4096
+use_rag_engine=false
+rag_engine_url=""
 
 
 [pr_reviewer] # /review #

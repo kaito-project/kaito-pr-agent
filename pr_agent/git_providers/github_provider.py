@@ -322,13 +322,14 @@ class GithubProvider(GitProvider):
                         if not patch:
                             patch = load_large_diff(file.filename, new_file_content_str, original_file_content_str)
 
-
+                old_filename = None
                 if file.status == 'added':
                     edit_type = EDIT_TYPE.ADDED
                 elif file.status == 'removed':
                     edit_type = EDIT_TYPE.DELETED
                 elif file.status == 'renamed':
                     edit_type = EDIT_TYPE.RENAMED
+                    old_filename = file.previous_filename
                 elif file.status == 'modified':
                     edit_type = EDIT_TYPE.MODIFIED
                 else:
@@ -347,7 +348,8 @@ class GithubProvider(GitProvider):
                 file_patch_canonical_structure = FilePatchInfo(original_file_content_str, new_file_content_str, patch,
                                                                file.filename, edit_type=edit_type,
                                                                num_plus_lines=num_plus_lines,
-                                                               num_minus_lines=num_minus_lines,)
+                                                               num_minus_lines=num_minus_lines,
+                                                               old_filename=old_filename,)
                 diff_files.append(file_patch_canonical_structure)
             if invalid_files_names:
                 get_logger().info(f"Filtered out files with invalid extensions: {invalid_files_names}")
