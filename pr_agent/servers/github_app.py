@@ -47,8 +47,8 @@ if os.path.exists(build_number_path):
 else:
     build_number = "unknown"
 router = APIRouter()
-use_rag_engine = get_settings().get("CONFIG.USE_RAG_ENGINE", False)
-ragEngine = PRRagEngine(base_url=get_settings().get("CONFIG.RAG_ENGINE_URL", ""))
+use_rag_engine = get_settings().get("KAITORAGENGINE.USE_RAG_ENGINE", False)
+ragEngine = PRRagEngine(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
 
 @router.post("/api/v1/github_webhooks")
 async def handle_github_webhooks(background_tasks: BackgroundTasks, request: Request, response: Response):
@@ -235,7 +235,7 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             get_logger().info(f"Performing incremental review for {api_url=} because of {event=} and {action=}")
             if use_rag_engine:
                 try:
-                    ragEngine.update_index(api_url)
+                    ragEngine.update_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to update PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("push_commands", agent, body, api_url, log_context)

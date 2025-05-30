@@ -62,7 +62,7 @@ def mock_git_provider():
         head_file="print('hello world')",
         edit_type=EDIT_TYPE.MODIFIED,
     )]
-    provider.get_
+    provider.pr.base.ref = "main"
     provider.get_pr_file_content.return_value = "print('hello world')"
     return provider
 
@@ -111,7 +111,7 @@ def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
 
     # Patch index name
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.update_index("http://pr-url")
+        engine.update_pr_index("http://pr-url")
         mock_rag_client.index_documents.assert_called_once()
         mock_rag_client.update_documents.assert_called_once()
         mock_rag_client.delete_documents.assert_called_once()
