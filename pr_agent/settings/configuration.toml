@@ -368,5 +368,5 @@ pr_commands = [
 ]
 
 [kaitoragengine]
-use_rag_engine=true
-rag_engine_url="http://rag-update-test-f9eeb3g8d5h0h6ga.b02.azurefd.net"
+use_rag_engine=false
+rag_engine_url=""
