@@ -36,6 +36,7 @@ from pr_agent.identity_providers import get_identity_provider
 from pr_agent.identity_providers.identity_provider import Eligibility
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.utils import DefaultDictWithTimeout, verify_signature
+from pr_agent.tools.pr_rag_engine import PRRagEngine
 
 setup_logger(fmt=LoggingFormat.JSON, level=get_settings().get("CONFIG.LOG_LEVEL", "DEBUG"))
 base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -46,7 +47,8 @@ if os.path.exists(build_number_path):
 else:
     build_number = "unknown"
 router = APIRouter()
-
+use_rag_engine = get_settings().get("KAITORAGENGINE.USE_RAG_ENGINE", False)
+ragEngine = PRRagEngine(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
 
 @router.post("/api/v1/github_webhooks")
 async def handle_github_webhooks(background_tasks: BackgroundTasks, request: Request, response: Response):
@@ -167,6 +169,11 @@ async def handle_new_pr_opened(body: Dict[str, Any],
         # logic to ignore PRs with specific titles (e.g. "[Auto] ...")
         apply_repo_settings(api_url)
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
+            if use_rag_engine:
+                try:
+                    ragEngine.create_new_pr_index(api_url)
+                except Exception as e:
+                    get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("pr_commands", agent, body, api_url, log_context)
         else:
             get_logger().info(f"User {sender=} is not eligible to process PR {api_url=}")
@@ -226,6 +233,11 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
     try:
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Performing incremental review for {api_url=} because of {event=} and {action=}")
+            if use_rag_engine:
+                try:
+                    ragEngine.update_pr_index(api_url)
+                except Exception as e:
+                    get_logger().error(f"Failed to update PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("push_commands", agent, body, api_url, log_context)
 
     finally:
@@ -241,9 +253,15 @@ def handle_closed_pr(body, event, action, log_context):
     if not is_merged:
         return
     api_url = pull_request.get("url", "")
-    pr_statistics = get_git_provider()(pr_url=api_url).calc_pr_statistics(pull_request)
-    log_context["api_url"] = api_url
-    get_logger().info("PR-Agent statistics for closed PR", analytics=True, pr_statistics=pr_statistics, **log_context)
+    if get_settings().get("CONFIG.ANALYTICS_FOLDER", ""):
+        pr_statistics = get_git_provider()(pr_url=api_url).calc_pr_statistics(pull_request)
+        log_context["api_url"] = api_url
+        get_logger().info("PR-Agent statistics for closed PR", analytics=True, pr_statistics=pr_statistics, **log_context)
+    if use_rag_engine:
+        try:
+            ragEngine.update_base_branch_index(api_url)
+        except Exception as e:
+            get_logger().error(f"Failed to update base branch index for {api_url=}: {e}")
 
 
 def get_log_context(body, event, action, build_number):
@@ -409,8 +427,7 @@ async def handle_request(body: Dict[str, Any], event: str):
     elif event == 'pull_request' and action == 'synchronize':
         await handle_push_trigger_for_new_commits(body, event, sender,sender_id,  action, log_context, agent)
     elif event == 'pull_request' and action == 'closed':
-        if get_settings().get("CONFIG.ANALYTICS_FOLDER", ""):
-            handle_closed_pr(body, event, action, log_context)
+        handle_closed_pr(body, event, action, log_context)
     else:
         get_logger().info(f"event {event=} action {action=} does not require any handling")
     return {}

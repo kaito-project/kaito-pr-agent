@@ -366,3 +366,7 @@ pr_commands = [
     "/review",
     "/improve",
 ]
+
+[kaitoragengine]
+use_rag_engine=false
+rag_engine_url=""
