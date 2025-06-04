@@ -1,39 +1,112 @@
-# This workflow enables developers to call PR-Agents `/[actions]` in PR's comments and upon PR creation.
-# Learn more at https://www.codium.ai/pr-agent/
-# This is v0.2 of this workflow file
-
-name: PR-Agent
+name: PR-Agent Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  # issue_comment:
-  #   types: [created]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
 
 permissions:
   issues: write
   pull-requests: write
+  contents: read
 
 jobs:
-  pr_agent_job:
+  pr_agent_review:
     runs-on: ubuntu-latest
-    name: Run Kaito PR Agent
+    name: Run Kaito PR Agent (Review)
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Debug repository info
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Working directory: $(pwd)"
+          ls -la
+          echo "Python modules:"
+          python -c "import sys; print('\n'.join(sys.path))"
+
+      - name: Get PR URL
+        id: pr_url
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "pr_url=${{ github.event.pull_request.html_url }}" >> $GITHUB_OUTPUT
+            echo "PR URL from pull_request event: ${{ github.event.pull_request.html_url }}"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]] && [[ -n "${{ github.event.issue.pull_request.html_url }}" ]]; then
+            echo "pr_url=${{ github.event.issue.pull_request.html_url }}" >> $GITHUB_OUTPUT
+            echo "PR URL from issue_comment event: ${{ github.event.issue.pull_request.html_url }}"
+          else
+            echo "No PR URL found for event: ${{ github.event_name }}"
+            echo "pr_url=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for API keys
+        id: check_keys
+        run: |
+          if [[ -n "${{ secrets.OPENAI_KEY }}" ]]; then
+            echo "has_openai=true" >> $GITHUB_OUTPUT
+            echo "✅ OpenAI API key available"
+          elif [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]]; then
+            echo "has_azure=true" >> $GITHUB_OUTPUT
+            echo "✅ Azure OpenAI API key available"
+          elif [[ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]]; then
+            echo "has_anthropic=true" >> $GITHUB_OUTPUT
+            echo "✅ Anthropic API key available"
+          else
+            echo "❌ No LLM API keys found in secrets"
+            echo "has_keys=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "has_keys=true" >> $GITHUB_OUTPUT
 
       - name: Run Kaito PR Agent
-        uses: ./.github/actions/kaito-pr-agent
+        if: steps.pr_url.outputs.pr_url != '' && steps.check_keys.outputs.has_keys == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
+          GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: true
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          echo "Running Kaito PR Agent for: ${{ steps.pr_url.outputs.pr_url }}"
+          
+          # Run describe command (always - for testing)
+          echo "🔍 Running describe..."
+          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" describe
+          
+          # Run review command for the PR
+          echo "📝 Running review..."
+          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" review
+          
+          # Run improve command for code suggestions
+          echo "🚀 Running improve..."
+          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" improve
+
+      - name: Handle failure
+        if: failure()
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          openai_key: ${{ secrets.OPENAI_KEY }}
-          azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          azure_openai_key: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          anthropic_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          auto_describe: 'true'
-          auto_review: 'true'
-          auto_improve: 'true'
+          script: |
+            if (context.payload.pull_request) {
+              await github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '❌ Kaito PR-Agent encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+              });
+            } 
