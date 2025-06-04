@@ -2,8 +2,12 @@ name: PR-Agent E2E tests
 
 on:
   workflow_dispatch:
-#  schedule:
-#    - cron: '0 0 * * *' # This cron expression runs the workflow every night at midnight UTC
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # schedule:
+  #   - cron: '0 2 * * *' # Run nightly at 2 AM UTC
 
 jobs:
   pr_agent_job:
