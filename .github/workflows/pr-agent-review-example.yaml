@@ -21,7 +21,7 @@ jobs:
     
     - name: PR Agent action step
       id: pragent
-      uses: Codium-ai/pr-agent@main
+      uses: kaito-project/kaito-pr-agent@main
       env:
         CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-7b-instruct"
 
@@ -54,4 +54,4 @@ jobs:
 #            -e GITHUB.USER_TOKEN="${{ secrets.API_TOKEN }}" \
 #            -e GITHUB.DEPLOYMENT_TYPE="user" \
 #            -e OLLAMA.API_BASE="http://host.docker.internal:5000/v1" \
-#            codiumai/pr-agent:latest --pr_url ${{ github.event.pull_request.html_url
+#            kaito-project/kaito-pr-agent:latest --pr_url ${{ github.event.pull_request.html_url
