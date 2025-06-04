@@ -6,7 +6,6 @@ data:
   allowed_repos.toml: |
     allowed_repos = [
       "https://github.com/kaito-project/kaito",
-      "https://github.com/ishaansehgal99/kaito-pr-review-demo",
       "https://github.com/Azure/fleet",
       "https://github.com/Azure/fleet-networking",
       "https://github.com/Azure/gpu-provisioner",
