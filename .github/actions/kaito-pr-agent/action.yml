@@ -1,0 +1,76 @@
+name: 'Kaito PR Agent'
+description: 'Enhanced PR Agent with Kaito-specific features'
+author: 'Kaito Team'
+
+inputs:
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  openai_key:
+    description: 'OpenAI API key'
+    required: false
+  azure_openai_endpoint:
+    description: 'Azure OpenAI endpoint'
+    required: false
+  azure_openai_key:
+    description: 'Azure OpenAI API key'
+    required: false
+  anthropic_key:
+    description: 'Anthropic API key'
+    required: false
+  auto_describe:
+    description: 'Automatically describe PRs'
+    required: false
+    default: 'true'
+  auto_review:
+    description: 'Automatically review PRs'
+    required: false
+    default: 'true'
+  auto_improve:
+    description: 'Automatically suggest improvements'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run Kaito PR Agent
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        OPENAI_KEY: ${{ inputs.openai_key }}
+        AZURE_OPENAI_ENDPOINT: ${{ inputs.azure_openai_endpoint }}
+        AZURE_OPENAI_API_KEY: ${{ inputs.azure_openai_key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_key }}
+        GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: ${{ inputs.auto_describe }}
+        GITHUB_ACTION_CONFIG.AUTO_REVIEW: ${{ inputs.auto_review }}
+        GITHUB_ACTION_CONFIG.AUTO_IMPROVE: ${{ inputs.auto_improve }}
+        GITHUB_ACTION_CONFIG.MODEL: "gpt-4"
+      run: |
+        # Determine the PR URL based on event type
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          PR_URL="${{ github.event.pull_request.html_url }}"
+        elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+          PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        else
+          echo "Unsupported event type: ${{ github.event_name }}"
+          exit 1
+        fi
+        
+        echo "Running Kaito PR Agent for: $PR_URL"
+        python -m pr_agent.cli --pr_url="$PR_URL"
+
+branding:
+  icon: 'git-pull-request'
+  color: 'blue' 
