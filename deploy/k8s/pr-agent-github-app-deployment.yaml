@@ -29,18 +29,15 @@ spec:
             periodSeconds: 10
           ports:
             - containerPort: 3000
-          # Mount secrets volume
+          # Use projected volume to combine secrets and config
           volumeMounts:
-            - mountPath: "/app/pr_agent/settings_prod/.secrets.toml"
-              subPath: .secrets.toml
-              name: secrets-volume
-            - mountPath: "/app/pr_agent/settings_prod/allowed_repos.toml"
-              subPath: allowed_repos.toml
-              name: pr-agent-config-volume
+            - mountPath: "/app/pr_agent/settings_prod"
+              name: combined-settings-volume
       volumes:
-        - name: secrets-volume
-          secret:
-            secretName: kaito-pr-agent-secrets
-        - name: pr-agent-config-volume
-          configMap:
-            name: pr-agent-config
+        - name: combined-settings-volume
+          projected:
+            sources:
+            - secret:
+                name: kaito-pr-agent-secrets
+            - configMap:
+                name: pr-agent-config
