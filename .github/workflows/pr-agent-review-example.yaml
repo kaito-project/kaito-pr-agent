@@ -1,9 +1,17 @@
-name: PRAgent
+
+# DISABLED WORKFLOW - EXAMPLE ONLY
+# This workflow is disabled and serves as an example of how to configure 
+# Kaito PR-Agent with custom model endpoints and configurations.
+# To use this workflow, uncomment the 'on:' triggers below.
+
+name: PRAgent (Example - Disabled)
 on:
-  pull_request:
-    branches: ["*"]
-  issue_comment:
-    types: [created]
+  # This workflow is disabled - uncomment below to enable
+  # pull_request:
+  #   branches: ["*"]
+  # issue_comment:
+  #   types: [created]
+  workflow_dispatch: # Manual trigger only for testing
 
 jobs:
   pr_agent_job:
