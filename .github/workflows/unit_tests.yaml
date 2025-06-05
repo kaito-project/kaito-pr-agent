@@ -1,4 +1,13 @@
-name: Build-and-test
+name: Unit Test
+
+# =============================================================================
+# UNIT TEST WORKFLOW
+# =============================================================================
+# This workflow validates code changes by building Docker images and running unit tests
+# 
+# Purpose: Quality gate for PRs and main branch
+# Note: This does NOT publish images (see docker-release.yaml for that)
+# =============================================================================
 
 on:
   push:
@@ -29,8 +38,8 @@ jobs:
           push: false
           load: true
           tags: kaito-project/kaito-pr-agent:test
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,mode=max,scope=dev
+          cache-from: type=gha,scope=dev-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
           target: test
 
       - id: test
