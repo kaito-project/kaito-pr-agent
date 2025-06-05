@@ -31,6 +31,8 @@ permissions:
 
 jobs:
   e2e_test:
+    # Skip E2E test PRs to avoid infinite recursion
+    if: ${{ !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
     runs-on: ubuntu-latest
     name: E2E Test PR-Agent Docker Image
     steps:

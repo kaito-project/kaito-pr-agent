@@ -11,6 +11,8 @@ on:
 
 jobs:
   build-and-test:
+    # Skip E2E test PRs to avoid unnecessary resource usage
+    if: ${{ !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -30,8 +32,8 @@ jobs:
           push: false
           load: true
           tags: kaito-project/kaito-pr-agent:test
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,mode=max,scope=dev
+          cache-from: type=gha,scope=coverage-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=coverage-${{ github.ref_name }}
           target: test
 
       - id: code_cov
