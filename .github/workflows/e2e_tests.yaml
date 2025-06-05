@@ -56,8 +56,8 @@ jobs:
           push: false
           load: true
           tags: ${{ steps.image_tag.outputs.image_tag }}
-          cache-from: type=gha,scope=dev-${{ github.ref_name }}
-          cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
+          cache-from: type=gha,scope=e2e-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=e2e-${{ github.ref_name }}
           target: test
 
       - name: Set up Python for E2E test

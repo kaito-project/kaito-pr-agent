@@ -38,8 +38,8 @@ jobs:
           push: false
           load: true
           tags: kaito-project/kaito-pr-agent:test
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,mode=max,scope=dev
+          cache-from: type=gha,scope=dev-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
           target: test
 
       - id: test
