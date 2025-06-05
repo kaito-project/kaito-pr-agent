@@ -88,7 +88,7 @@ def test_e2e_pr_agent_docker_image():
         logger.info("📋 Running describe command...")
         describe_result = subprocess.run([
             "docker", "run", "--rm",
-            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB_USER_TOKEN')}",
+            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB.USER_TOKEN')}",
             "-e", "GITHUB.DEPLOYMENT_TYPE=user",
             docker_image,
             "python", "-m", "pr_agent.cli",
@@ -104,7 +104,7 @@ def test_e2e_pr_agent_docker_image():
         logger.info("🔍 Running review command...")
         review_result = subprocess.run([
             "docker", "run", "--rm", 
-            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB_USER_TOKEN')}",
+            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB.USER_TOKEN')}",
             "-e", "GITHUB.DEPLOYMENT_TYPE=user",
             docker_image,
             "python", "-m", "pr_agent.cli",
@@ -120,7 +120,7 @@ def test_e2e_pr_agent_docker_image():
         logger.info("🚀 Running improve command...")
         improve_result = subprocess.run([
             "docker", "run", "--rm",
-            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB_USER_TOKEN')}",
+            "-e", f"GITHUB.USER_TOKEN={os.environ.get('GITHUB.USER_TOKEN')}",
             "-e", "GITHUB.DEPLOYMENT_TYPE=user", 
             docker_image,
             "python", "-m", "pr_agent.cli",

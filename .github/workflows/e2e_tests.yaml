@@ -62,7 +62,25 @@ jobs:
           cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
           target: test
 
+      - name: Set up Python for E2E test
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install E2E test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest PyGithub python-dotenv
+          # Install PR-Agent dependencies for the test environment
+          pip install -r requirements.txt
+
       - name: Run E2E Test
+        env:
+          GITHUB.USER_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
+          GITHUB.DEPLOYMENT_TYPE: user
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }}
+          E2E_DOCKER_IMAGE: ${{ steps.image_tag.outputs.image_tag }}
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           if [ -z "${{ secrets.E2E_GITHUB_TOKEN }}" ]; then
             echo "❌ ERROR: E2E_GITHUB_TOKEN secret is not set"
@@ -80,14 +98,8 @@ jobs:
           echo "  4. Clean up the test PR"
           echo ""
           
-          docker run \
-            -e GITHUB.USER_TOKEN=${{ secrets.E2E_GITHUB_TOKEN }} \
-            -e GITHUB.DEPLOYMENT_TYPE=user \
-            -e OPENAI_KEY=${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }} \
-            -e E2E_DOCKER_IMAGE=${{ steps.image_tag.outputs.image_tag }} \
-            --rm \
-            ${{ steps.image_tag.outputs.image_tag }} \
-            pytest -v tests/e2e_tests/test_pr_agent_e2e.py
+          # Run the E2E test directly on the runner (not inside container)
+          pytest -v tests/e2e_tests/test_pr_agent_e2e.py
 
       - name: Test Results Summary
         if: always()
