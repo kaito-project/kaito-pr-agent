@@ -1,124 +1,65 @@
-name: PR-Agent Review
 
+# DISABLED WORKFLOW - EXAMPLE ONLY
+# This workflow is disabled and serves as an example of how to configure 
+# Kaito PR-Agent with custom model endpoints and configurations.
+# To use this workflow, uncomment the 'on:' triggers below.
+
+name: PRAgent (Example - Disabled)
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
-  workflow_dispatch:
-
-permissions:
-  issues: write
-  pull-requests: write
-  contents: read
+  # This workflow is disabled - uncomment below to enable
+  # pull_request:
+  #   branches: ["*"]
+  # issue_comment:
+  #   types: [created]
+  workflow_dispatch: # Manual trigger only for testing
 
 jobs:
-  pr_agent_review:
+  pr_agent_job:
+    if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
-    name: Run Kaito PR Agent (Review)
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+    name: Run PR Agent on every pull request, respond to user comments
     steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v4
+    - name: Check Model Endpoint
+      run: |
+        curl -X GET "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" -v
+    
+    - name: PR Agent action step
+      id: pragent
+      uses: kaito-project/kaito-pr-agent@main
+      env:
+        CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-7b-instruct"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+        CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
+        CONFIG.DUPLICATE_EXAMPLES: "true"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug repository info
-        run: |
-          echo "Repository: ${{ github.repository }}"
-          echo "Event: ${{ github.event_name }}"
-          echo "Working directory: $(pwd)"
-          ls -la
-          echo "Python modules:"
-          python -c "import sys; print('\n'.join(sys.path))"
+        OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
+        litellm.set_verbose: True
 
-      - name: Get PR URL
-        id: pr_url
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "pr_url=${{ github.event.pull_request.html_url }}" >> $GITHUB_OUTPUT
-            echo "PR URL from pull_request event: ${{ github.event.pull_request.html_url }}"
-          elif [[ "${{ github.event_name }}" == "issue_comment" ]] && [[ -n "${{ github.event.issue.pull_request.html_url }}" ]]; then
-            echo "pr_url=${{ github.event.issue.pull_request.html_url }}" >> $GITHUB_OUTPUT
-            echo "PR URL from issue_comment event: ${{ github.event.issue.pull_request.html_url }}"
-          else
-            echo "No PR URL found for event: ${{ github.event_name }}"
-            echo "pr_url=" >> $GITHUB_OUTPUT
-          fi
+          # PR Agent configuration options
+        #   pr_description.use_description_markers: "true"
+        #   pr_description.include_generated_by_header: "true"
+        #   github_action.auto_review: "true"
+        #   github_action.auto_describe: "true"
+        #   github_action.auto_improve: "true"
+        #   pr_update_changelog.push_changelog_changes: "true"
 
-      - name: Check for API keys
-        id: check_keys
-        run: |
-          if [[ -n "${{ secrets.OPENAI_KEY }}" ]]; then
-            echo "has_openai=true" >> $GITHUB_OUTPUT
-            echo "✅ OpenAI API key available"
-          elif [[ -n "${{ secrets.AZURE_OPENAI_API_KEY }}" ]]; then
-            echo "has_azure=true" >> $GITHUB_OUTPUT
-            echo "✅ Azure OpenAI API key available"
-          elif [[ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]]; then
-            echo "has_anthropic=true" >> $GITHUB_OUTPUT
-            echo "✅ Anthropic API key available"
-          else
-            echo "❌ No LLM API keys found in secrets"
-            echo "has_keys=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          echo "has_keys=true" >> $GITHUB_OUTPUT
-
-      - name: Run Kaito PR Agent
-        if: steps.pr_url.outputs.pr_url != '' && steps.check_keys.outputs.has_keys == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB.DEPLOYMENT_TYPE: "user"
-          # Azure OpenAI configuration
-          OPENAI.API_TYPE: "azure"
-          OPENAI.API_VERSION: "2025-01-01-preview"
-          OPENAI.API_BASE: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          OPENAI.DEPLOYMENT_ID: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_ID }}
-          OPENAI.KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          # LiteLLM configuration for O-series models
-          LITELLM_DROP_PARAMS: "true"
-          # Configuration
-          CONFIG.MODEL: ${{ secrets.AZURE_OPENAI_MODEL || 'o4-mini' }}
-          CONFIG.FALLBACK_MODELS: '["o4-mini", "o3-mini"]'
-          CONFIG.TEMPERATURE: "1"
-          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
-          GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
-          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: true
-          PYTHONPATH: ${{ github.workspace }}
-        run: |
-          echo "Running Kaito PR Agent for: ${{ steps.pr_url.outputs.pr_url }}"
-          
-          # Run describe command (always - for testing)
-          echo "🔍 Running describe..."
-          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" describe
-          
-          # Run review command for the PR
-          echo "📝 Running review..."
-          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" review
-          
-          # Run improve command for code suggestions
-          echo "🚀 Running improve..."
-          python -m pr_agent.cli --pr_url="${{ steps.pr_url.outputs.pr_url }}" improve
-
-      - name: Handle failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            if (context.payload.pull_request) {
-              await github.rest.issues.createComment({
-                issue_number: context.payload.pull_request.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '❌ Kaito PR-Agent encountered an error. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
-              });
-            } 
+# Run using docker
+#      - name: Run PR Agent
+#        id: pragent
+#        run: |
+#          docker run --rm -it \
+#            -e CONFIG.MODEL="hosted_vllm/qwen2.5-coder-7b-instruct" \
+#            -e CONFIG.FALLBACK_MODELS="hosted_vllm/qwen2.5-coder-7b-instruct" \
+#            -e CONFIG.CUSTOM_MODEL_MAX_TOKENS="32768" \
+#            -e CONFIG.DUPLICATE_EXAMPLES="true" \
+#            -e GITHUB.USER_TOKEN="${{ secrets.API_TOKEN }}" \
+#            -e GITHUB.DEPLOYMENT_TYPE="user" \
+#            -e OLLAMA.API_BASE="http://host.docker.internal:5000/v1" \
+#            kaito-project/kaito-pr-agent:latest --pr_url ${{ github.event.pull_request.html_url
