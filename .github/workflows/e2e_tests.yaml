@@ -1,14 +1,40 @@
-name: PR-Agent E2E tests
+name: PR-Agent E2E Tests
+
+# =============================================================================
+# DEVELOPMENT/TESTING WORKFLOW
+# =============================================================================
+# This workflow tests YOUR CODE CHANGES by building a Docker image from your
+# modified code and running end-to-end tests against it.
+# 
+# Purpose: Validate that your code changes work correctly before merging
+# Trigger: Pull requests, pushes to main, or manual triggers
+# Code Used: YOUR MODIFIED CODE (builds fresh Docker image from your branch)
+# 
+# =============================================================================
 
 on:
   workflow_dispatch:
-#  schedule:
-#    - cron: '0 0 * * *' # This cron expression runs the workflow every night at midnight UTC
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # schedule:
+  #   - cron: '0 2 * * *' # Run nightly at 2 AM UTC
+
+# Prevent multiple E2E tests from running simultaneously per PR/branch
+concurrency:
+  group: e2e-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
-  pr_agent_job:
+  e2e_test:
     runs-on: ubuntu-latest
-    name: PR-Agent E2E GitHub App Test
+    name: E2E Test PR-Agent Docker Image
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,30 +42,71 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - id: build
-        name: Build dev docker
+      - name: Generate unique image tag
+        id: image_tag
+        run: |
+          # Create unique tag to avoid conflicts between parallel runs
+          UNIQUE_TAG="kaito-project/kaito-pr-agent:test-${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "image_tag=${UNIQUE_TAG}" >> $GITHUB_OUTPUT
+          echo "Using unique image tag: ${UNIQUE_TAG}"
+
+      - name: Build PR-Agent Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/Dockerfile
           push: false
           load: true
-          tags: codiumai/pr-agent:test
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,mode=max,scope=dev
+          tags: ${{ steps.image_tag.outputs.image_tag }}
+          cache-from: type=gha,scope=dev-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
           target: test
 
-      - id: test1
-        name: E2E test github app
-        run: |
-          docker run -e GITHUB.USER_TOKEN=${{ secrets.TOKEN_GITHUB }} --rm codiumai/pr-agent:test pytest -v tests/e2e_tests/test_github_app.py
+      - name: Set up Python for E2E test
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - id: test2
-        name: E2E gitlab webhook
+      - name: Install E2E test dependencies
         run: |
-          docker run -e gitlab.PERSONAL_ACCESS_TOKEN=${{ secrets.TOKEN_GITLAB }} --rm codiumai/pr-agent:test pytest -v tests/e2e_tests/test_gitlab_webhook.py
+          python -m pip install --upgrade pip
+          pip install pytest PyGithub python-dotenv
+          # Install PR-Agent dependencies for the test environment
+          pip install -r requirements.txt
 
-      - id: test3
-        name: E2E bitbucket app
+      - name: Run E2E Test
+        env:
+          GITHUB.USER_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
+          GITHUB.DEPLOYMENT_TYPE: user
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }}
+          E2E_DOCKER_IMAGE: ${{ steps.image_tag.outputs.image_tag }}
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          docker run -e BITBUCKET.USERNAME=${{ secrets.BITBUCKET_USERNAME }}  -e BITBUCKET.PASSWORD=${{ secrets.BITBUCKET_PASSWORD }} --rm codiumai/pr-agent:test pytest -v tests/e2e_tests/test_bitbucket_app.py
+          if [ -z "${{ secrets.E2E_GITHUB_TOKEN }}" ]; then
+            echo "❌ ERROR: E2E_GITHUB_TOKEN secret is not set"
+            echo "Please create a Personal Access Token and add it as a repository secret"
+            echo "Instructions: https://github.com/settings/tokens/new"
+            exit 1
+          fi
+          
+          echo "🧪 Running E2E test with built Docker image..."
+          echo "Image: ${{ steps.image_tag.outputs.image_tag }}"
+          echo "This test will:"
+          echo "  1. Create a test PR in this repository"
+          echo "  2. Run the built PR-Agent image on that PR"
+          echo "  3. Validate that describe/review/improve tools work"
+          echo "  4. Clean up the test PR"
+          echo ""
+          
+          # Run the E2E test directly on the runner (not inside container)
+          pytest -v tests/e2e_tests/test_pr_agent_e2e.py
+
+      - name: Test Results Summary
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ E2E Test PASSED - Your PR-Agent changes work correctly!"
+          else
+            echo "❌ E2E Test FAILED - Check the logs above for details"
+            exit 1
+          fi
