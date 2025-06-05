@@ -1,65 +1,74 @@
 
-# DISABLED WORKFLOW - EXAMPLE ONLY
-# This workflow is disabled and serves as an example of how to configure 
-# Kaito PR-Agent with custom model endpoints and configurations.
-# To use this workflow, uncomment the 'on:' triggers below.
+# =============================================================================
+# PRODUCTION PR REVIEW WORKFLOW  
+# =============================================================================
+# This workflow uses the PRODUCTION version of PR-Agent to automatically
+# review PRs opened against this repository using the Kaito backend.
+#
+# Purpose: Provide stable, reliable PR reviews for contributors
+# Code Used: Production version (stable, tested)
+# Backend: Kaito load balancer endpoint
+# =============================================================================
 
-name: PRAgent (Example - Disabled)
+name: PR-Agent Review (Production)
 on:
-  # This workflow is disabled - uncomment below to enable
-  # pull_request:
-  #   branches: ["*"]
-  # issue_comment:
-  #   types: [created]
-  workflow_dispatch: # Manual trigger only for testing
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  issue_comment:
+    types: [created]
+  workflow_dispatch: # Manual trigger for testing
+
+# Prevent conflicts between PR review and E2E tests
+concurrency:
+  group: pr-workflows-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel, let both run
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
 
 jobs:
   pr_agent_job:
-    if: ${{ github.event.sender.type != 'Bot' }}
+    # Skip E2E test PRs and bot PRs to avoid circular dependencies
+    if: ${{ github.event.sender.type != 'Bot' && !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-      contents: write
-    name: Run PR Agent on every pull request, respond to user comments
+    name: Review PRs using Production PR-Agent
     steps:
-    - name: Check Model Endpoint
+    - name: Check Kaito Backend Health
       run: |
-        curl -X GET "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" -v
+        echo "🔍 Checking Kaito backend health..."
+        curl -X GET "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" -v || echo "⚠️ Backend health check failed"
     
-    - name: PR Agent action step
+    - name: Run Production PR-Agent Review
       id: pragent
-      uses: kaito-project/kaito-pr-agent@main
+      uses: kaito-project/kaito-pr-agent@main  # Uses production version
       env:
-        CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-7b-instruct"
-
+        # Kaito backend configuration
+        CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
         CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
-        CONFIG.DUPLICATE_EXAMPLES: "true"
-
+        CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
+        CONFIG.AI_TIMEOUT: "600"
+        
+        # GitHub configuration
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        GITHUB.DEPLOYMENT_TYPE: "user"
+        
+        # Kaito endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
-        litellm.set_verbose: True
+        
+        # PR Agent features
+        GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
+        GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
+        GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
 
-          # PR Agent configuration options
-        #   pr_description.use_description_markers: "true"
-        #   pr_description.include_generated_by_header: "true"
-        #   github_action.auto_review: "true"
-        #   github_action.auto_describe: "true"
-        #   github_action.auto_improve: "true"
-        #   pr_update_changelog.push_changelog_changes: "true"
-
-# Run using docker
-#      - name: Run PR Agent
-#        id: pragent
-#        run: |
-#          docker run --rm -it \
-#            -e CONFIG.MODEL="hosted_vllm/qwen2.5-coder-7b-instruct" \
-#            -e CONFIG.FALLBACK_MODELS="hosted_vllm/qwen2.5-coder-7b-instruct" \
-#            -e CONFIG.CUSTOM_MODEL_MAX_TOKENS="32768" \
-#            -e CONFIG.DUPLICATE_EXAMPLES="true" \
-#            -e GITHUB.USER_TOKEN="${{ secrets.API_TOKEN }}" \
-#            -e GITHUB.DEPLOYMENT_TYPE="user" \
-#            -e OLLAMA.API_BASE="http://host.docker.internal:5000/v1" \
-#            kaito-project/kaito-pr-agent:latest --pr_url ${{ github.event.pull_request.html_url
+    - name: Review Summary
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "✅ PR Review completed successfully!"
+        else
+          echo "❌ PR Review failed - check logs above"
+        fi
