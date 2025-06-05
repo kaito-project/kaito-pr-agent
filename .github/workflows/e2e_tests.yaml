@@ -38,31 +38,16 @@ jobs:
           cache-to: type=gha,mode=max,scope=dev
           target: test
 
-      - name: Generate GitHub App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
-      - name: Debug GitHub App Token
-        run: |
-          echo "Token generated: ${{ steps.generate_token.outputs.token != '' }}"
-          # Test basic API access
-          curl -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
-               -H "Accept: application/vnd.github.v3+json" \
-               https://api.github.com/repos/kaito-project/kaito-pr-agent
-
       - id: test1
         name: E2E test github app
         run: |
-          # Use GitHub App token if available, otherwise fallback to PAT
-          TOKEN="${{ steps.generate_token.outputs.token || secrets.E2E_GITHUB_TOKEN }}"
-          if [ -z "$TOKEN" ]; then
-            echo "ERROR: No token available. Please set either GitHub App secrets (APP_ID, APP_PRIVATE_KEY) or E2E_GITHUB_TOKEN"
+          if [ -z "${{ secrets.E2E_GITHUB_TOKEN }}" ]; then
+            echo "ERROR: E2E_GITHUB_TOKEN secret is not set"
+            echo "Please create a Personal Access Token and add it as a repository secret"
+            echo "Instructions: https://github.com/settings/tokens/new"
             exit 1
           fi
-          docker run -e GITHUB.USER_TOKEN="$TOKEN" --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_github_app.py
+          docker run -e GITHUB.USER_TOKEN=${{ secrets.E2E_GITHUB_TOKEN }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_github_app.py
 
       # - id: test2
       #   name: E2E gitlab webhook
