@@ -81,7 +81,8 @@ jobs:
           echo ""
           
           docker run \
-            -e GITHUB_USER_TOKEN=${{ secrets.E2E_GITHUB_TOKEN }} \
+            -e GITHUB.USER_TOKEN=${{ secrets.E2E_GITHUB_TOKEN }} \
+            -e GITHUB.DEPLOYMENT_TYPE=user \
             -e OPENAI_KEY=${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }} \
             -e E2E_DOCKER_IMAGE=${{ steps.image_tag.outputs.image_tag }} \
             --rm \
