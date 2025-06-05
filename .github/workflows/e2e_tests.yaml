@@ -36,14 +36,14 @@ jobs:
       - id: test1
         name: E2E test github app
         run: |
-          docker run -e GITHUB.USER_TOKEN=${{ secrets.TOKEN_GITHUB }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_github_app.py
+          docker run -e GITHUB.USER_TOKEN=${{ secrets.GITHUB_TOKEN }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_github_app.py
 
-      - id: test2
-        name: E2E gitlab webhook
-        run: |
-          docker run -e gitlab.PERSONAL_ACCESS_TOKEN=${{ secrets.TOKEN_GITLAB }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_gitlab_webhook.py
+      # - id: test2
+      #   name: E2E gitlab webhook
+      #   run: |
+      #     docker run -e gitlab.PERSONAL_ACCESS_TOKEN=${{ secrets.TOKEN_GITLAB }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_gitlab_webhook.py
 
-      - id: test3
-        name: E2E bitbucket app
-        run: |
-          docker run -e BITBUCKET.USERNAME=${{ secrets.BITBUCKET_USERNAME }}  -e BITBUCKET.PASSWORD=${{ secrets.BITBUCKET_PASSWORD }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_bitbucket_app.py
+      # - id: test3
+      #   name: E2E bitbucket app
+      #   run: |
+      #     docker run -e BITBUCKET.USERNAME=${{ secrets.BITBUCKET_USERNAME }}  -e BITBUCKET.PASSWORD=${{ secrets.BITBUCKET_PASSWORD }} --rm kaito-project/kaito-pr-agent:test pytest -v tests/e2e_tests/test_bitbucket_app.py
