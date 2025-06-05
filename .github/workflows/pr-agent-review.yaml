@@ -80,7 +80,7 @@ jobs:
           GITHUB.DEPLOYMENT_TYPE: "user"
           # Azure OpenAI configuration
           OPENAI.API_TYPE: "azure"
-          OPENAI.API_VERSION: "2023-12-01-preview"
+          OPENAI.API_VERSION: "2025-04-16"
           OPENAI.API_BASE: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           OPENAI.DEPLOYMENT_ID: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_ID }}
           OPENAI.KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
