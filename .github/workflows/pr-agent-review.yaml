@@ -76,8 +76,17 @@ jobs:
         if: steps.pr_url.outputs.pr_url != '' && steps.check_keys.outputs.has_keys == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB.DEPLOYMENT_TYPE: "user"
+          # Azure OpenAI configuration
+          OPENAI.API_TYPE: "azure"
+          OPENAI.API_VERSION: "2023-05-15"
+          OPENAI.API_BASE: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          OPENAI.DEPLOYMENT_ID: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_ID }}
+          OPENAI.KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          # Configuration
+          CONFIG.MODEL: ${{ secrets.AZURE_OPENAI_MODEL || 'gpt-4' }}
+          CONFIG.FALLBACK_MODELS: '["gpt-4", "gpt-3.5-turbo"]'
           GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: true
           GITHUB_ACTION_CONFIG.AUTO_REVIEW: true
           GITHUB_ACTION_CONFIG.AUTO_IMPROVE: true
