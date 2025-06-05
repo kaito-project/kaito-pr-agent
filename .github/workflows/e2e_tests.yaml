@@ -76,7 +76,12 @@ jobs:
         env:
           GITHUB.USER_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
           GITHUB.DEPLOYMENT_TYPE: user
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }}
+          # Kaito backend configuration
+          CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
+          CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
+          CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
+          CONFIG.AI_TIMEOUT: "600"
+          OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
           E2E_DOCKER_IMAGE: ${{ steps.image_tag.outputs.image_tag }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
@@ -87,11 +92,20 @@ jobs:
             exit 1
           fi
           
+          if [ -z "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}" ]; then
+            echo "❌ ERROR: KAITO_PR_REVIEWER_WORKSPACE_URL secret is not set"
+            echo "Please set the Kaito load balancer endpoint URL"
+            exit 1
+          fi
+          
           echo "🧪 Running E2E test with built Docker image..."
           echo "Image: ${{ steps.image_tag.outputs.image_tag }}"
+          echo "Backend: Kaito (${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }})"
+          echo "Model: hosted_vllm/qwen2.5-coder-32b-instruct"
+          echo ""
           echo "This test will:"
           echo "  1. Create a test PR in this repository"
-          echo "  2. Run the built PR-Agent image on that PR"
+          echo "  2. Run the built PR-Agent image on that PR using Kaito backend"
           echo "  3. Validate that describe/review/improve tools work"
           echo "  4. Clean up the test PR"
           echo ""
