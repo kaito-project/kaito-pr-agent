@@ -13,7 +13,7 @@
 name: PR-Agent Review (Production)
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened, synchronize]  # Include synchronize to run on new commits
     branches: [main]
   issue_comment:
     types: [created]
@@ -32,7 +32,7 @@ permissions:
 jobs:
   pr_agent_job:
     # Skip E2E test PRs and bot PRs to avoid circular dependencies
-    if: ${{ github.event.sender.type != 'Bot' && !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
+    if: ${{ github.event.sender.type != 'Bot' && !contains(github.event.pull_request.title, '[E2E Test]') && !startsWith(github.event.pull_request.head.ref, 'e2e-test-') && !contains(github.event.pull_request.title, 'e2e-test-') }}
     runs-on: [ "self-hosted", "hostname:kaito-e2e-github-runner-2" ]
     name: Review PRs using Production PR-Agent
     steps:
@@ -42,6 +42,17 @@ jobs:
         egress-policy: audit
         disable-sudo: true  # PR review doesn't need sudo
         disable-telemetry: true
+
+    - name: Debug GitHub Event Information
+      run: |
+        echo "🔍 GitHub Event Debug Information:"
+        echo "Event Name: ${{ github.event_name }}"
+        echo "Event Action: ${{ github.event.action }}"
+        echo "PR Number: ${{ github.event.pull_request.number }}"
+        echo "PR Title: ${{ github.event.pull_request.title }}"
+        echo "Sender Type: ${{ github.event.sender.type }}"
+        echo "Repository: ${{ github.repository }}"
+        echo ""
 
     - name: Check Kaito Backend Health
       run: |
@@ -76,16 +87,37 @@ jobs:
         # Kaito endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
         
-        # PR Agent features
+        # PR Agent features configuration
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
         GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
+        
+        # Configure PR-Agent to handle the events we trigger on
+        GITHUB_ACTION_CONFIG.HANDLE_PR_ACTIONS: "opened,reopened,synchronize"
+        # GITHUB_ACTION_CONFIG.SKIP_ACTIONS: ""
+        
+        # Ensure PR comments are posted
+        PR_REVIEWER.ENABLE_REVIEW_LABELS_EFFORT: "true"
+        PR_REVIEWER.ENABLE_AUTO_APPROVAL: "false"
+        
+        # Additional configuration to ensure comments are posted
+        CONFIG.PUBLISH_OUTPUT: "true"
+        CONFIG.VERBOSITY_LEVEL: "1"
+        GITHUB_ACTION_CONFIG.ENABLE_OUTPUT: "true"
 
     - name: Review Summary
       if: always()
       run: |
-        if [ $? -eq 0 ]; then
+        echo "🔍 Checking PR-Agent results..."
+        echo "Step outcome: ${{ steps.pragent.outcome }}"
+        
+        if [[ "${{ steps.pragent.outcome }}" == "success" ]]; then
           echo "✅ PR Review completed successfully!"
+          echo "Check the PR for review comments and description updates."
         else
           echo "❌ PR Review failed - check logs above"
+          echo "Common issues:"
+          echo "  - Kaito backend connectivity"
+          echo "  - GitHub token permissions"
+          echo "  - Event type not handled by PR-Agent"
         fi
