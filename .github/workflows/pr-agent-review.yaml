@@ -108,11 +108,17 @@ jobs:
         
         # PR Description settings (key settings from .secrets.toml)
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
         PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
         PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
         
         # PR Reviewer settings
+        PR_REVIEWER.PERSISTENT_COMMENT: "true"
         PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Code Suggestions settings (prevent duplicate comments)
+        PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT: "true"
+        PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
         
         # Output configuration
         CONFIG.PUBLISH_OUTPUT: "true"
