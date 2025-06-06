@@ -73,8 +73,9 @@ jobs:
       id: pragent
       uses: kaito-project/kaito-pr-agent@main  # Uses production version
       env:
-        # Kaito backend configuration
+        # Model configuration (matching .secrets.toml)
         CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
+        CONFIG.FALLBACK_MODELS: "hosted_vllm/qwen2.5-coder-32b-instruct"
         CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
         CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
         CONFIG.AI_TIMEOUT: "600"
@@ -84,26 +85,42 @@ jobs:
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
         
-        # Kaito endpoint
+        # Ollama/Kaito endpoint configuration
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
         
-        # PR Agent features configuration
+        # GitHub event handling (matching .secrets.toml settings)
+        GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
+        GITHUB.HANDLE_PUSH_TRIGGER: "true"
+        GITHUB.PUSH_TRIGGER_IGNORE_BOT_COMMITS: "true"
+        GITHUB.PUSH_TRIGGER_IGNORE_MERGE_COMMITS: "true"
+        GITHUB.PUSH_TRIGGER_WAIT_FOR_INITIAL_REVIEW: "true"
+        GITHUB.PR_COMMANDS: "/describe,/review,/improve"
+        GITHUB.PUSH_COMMANDS: "/describe,/review,/improve"
+        
+        # PR Description settings (matching .secrets.toml)
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
+        PR_DESCRIPTION.ENABLE_PR_TYPE: "false"
+        PR_DESCRIPTION.ADD_ORIGINAL_USER_DESCRIPTION: "false"
+        PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
+        PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Reviewer settings (matching .secrets.toml)
+        PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
+        PR_REVIEWER.ENABLE_REVIEW_LABELS_EFFORT: "true"
+        PR_REVIEWER.ENABLE_AUTO_APPROVAL: "false"
+        
+        # PR Code Suggestions settings
+        PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
+        
+        # GitHub Action specific configuration
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
         GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
         
-        # Configure PR-Agent to handle the events we trigger on
-        GITHUB_ACTION_CONFIG.HANDLE_PR_ACTIONS: "opened,reopened,synchronize"
-        # GITHUB_ACTION_CONFIG.SKIP_ACTIONS: ""
-        
-        # Ensure PR comments are posted
-        PR_REVIEWER.ENABLE_REVIEW_LABELS_EFFORT: "true"
-        PR_REVIEWER.ENABLE_AUTO_APPROVAL: "false"
-        
-        # Additional configuration to ensure comments are posted
+        # Output configuration
         CONFIG.PUBLISH_OUTPUT: "true"
         CONFIG.VERBOSITY_LEVEL: "1"
-        GITHUB_ACTION_CONFIG.ENABLE_OUTPUT: "true"
 
     - name: Review Summary
       if: always()
