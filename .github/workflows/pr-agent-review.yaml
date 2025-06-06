@@ -7,7 +7,7 @@
 #
 # Purpose: Provide stable, reliable PR reviews for contributors
 # Code Used: Production version (stable, tested)
-# Backend: Kaito load balancer endpoint
+# Backend: Kaito load balancer endpoint (via self-hosted runner)
 # =============================================================================
 
 name: PR-Agent Review (Production)
@@ -33,13 +33,30 @@ jobs:
   pr_agent_job:
     # Skip E2E test PRs and bot PRs to avoid circular dependencies
     if: ${{ github.event.sender.type != 'Bot' && !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
-    runs-on: ubuntu-latest
+    runs-on: [ "self-hosted", "hostname:kaito-e2e-github-runner-2" ]
     name: Review PRs using Production PR-Agent
     steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+      with:
+        egress-policy: audit
+        disable-sudo: true  # PR review doesn't need sudo
+        disable-telemetry: true
+
     - name: Check Kaito Backend Health
       run: |
-        echo "🔍 Checking Kaito backend health..."
-        curl -X GET "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" -v || echo "⚠️ Backend health check failed"
+        echo "🔍 Checking Kaito backend health from self-hosted runner..."
+        echo "Backend URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
+        
+        if curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null; then
+          echo "✅ Kaito backend is accessible and responding"
+          echo "Available models:"
+          curl -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" | head -10
+        else
+          echo "❌ ERROR: Cannot access Kaito backend from self-hosted runner"
+          echo "This will cause PR review to fail"
+          exit 1
+        fi
     
     - name: Run Production PR-Agent Review
       id: pragent
