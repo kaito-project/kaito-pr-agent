@@ -1,4 +1,3 @@
-
 # =============================================================================
 # PRODUCTION PR REVIEW WORKFLOW  
 # =============================================================================
@@ -53,6 +52,20 @@ jobs:
         echo "Sender Type: ${{ github.event.sender.type }}"
         echo "Repository: ${{ github.repository }}"
         echo ""
+        echo "🔧 Expected PR-Agent Behavior:"
+        if [[ "${{ github.event.action }}" == "synchronize" ]]; then
+          echo "  - This is a SYNCHRONIZE event (new commits)"
+          echo "  - PR-Agent should handle this via PUSH TRIGGER system"
+          echo "  - Commands will be: /describe, /review, /improve"
+        elif [[ "${{ github.event.action }}" == "opened" ]] || [[ "${{ github.event.action }}" == "reopened" ]] || [[ "${{ github.event.action }}" == "ready_for_review" ]]; then
+          echo "  - This is a ${{ github.event.action }} event"
+          echo "  - PR-Agent should handle this via PR ACTIONS system"
+          echo "  - Commands will be: /describe, /review, /improve"
+        else
+          echo "  - This is a ${{ github.event.action }} event"
+          echo "  - PR-Agent may skip this event type"
+        fi
+        echo ""
 
     - name: Check Kaito Backend Health
       run: |
@@ -73,9 +86,8 @@ jobs:
       id: pragent
       uses: kaito-project/kaito-pr-agent@main  # Uses production version
       env:
-        # Model configuration (matching .secrets.toml)
+        # Model configuration
         CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
-        CONFIG.FALLBACK_MODELS: "hosted_vllm/qwen2.5-coder-32b-instruct"
         CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
         CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
         CONFIG.AI_TIMEOUT: "600"
@@ -85,42 +97,31 @@ jobs:
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
         
-        # Ollama/Kaito endpoint configuration
+        # Kaito endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
         
-        # GitHub event handling (matching .secrets.toml settings)
-        GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
-        GITHUB.HANDLE_PUSH_TRIGGER: "true"
-        GITHUB.PUSH_TRIGGER_IGNORE_BOT_COMMITS: "true"
-        GITHUB.PUSH_TRIGGER_IGNORE_MERGE_COMMITS: "true"
-        GITHUB.PUSH_TRIGGER_WAIT_FOR_INITIAL_REVIEW: "true"
-        GITHUB.PR_COMMANDS: "/describe,/review,/improve"
-        GITHUB.PUSH_COMMANDS: "/describe,/review,/improve"
-        
-        # PR Description settings (matching .secrets.toml)
-        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
-        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
-        PR_DESCRIPTION.ENABLE_PR_TYPE: "false"
-        PR_DESCRIPTION.ADD_ORIGINAL_USER_DESCRIPTION: "false"
-        PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
-        PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
-        
-        # PR Reviewer settings (matching .secrets.toml)
-        PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
-        PR_REVIEWER.ENABLE_REVIEW_LABELS_EFFORT: "true"
-        PR_REVIEWER.ENABLE_AUTO_APPROVAL: "false"
-        
-        # PR Code Suggestions settings
-        PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
-        
-        # GitHub Action specific configuration
+        # GitHub Action configuration (critical for event handling)
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
         GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
+        GITHUB_ACTION_CONFIG.PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
+        
+        # PR Description settings (key settings from .secrets.toml)
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
+        PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
+        PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Reviewer settings
+        PR_REVIEWER.PERSISTENT_COMMENT: "true"
+        PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Code Suggestions settings (prevent duplicate comments)
+        PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT: "true"
+        PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
         
         # Output configuration
         CONFIG.PUBLISH_OUTPUT: "true"
-        CONFIG.VERBOSITY_LEVEL: "1"
 
     - name: Review Summary
       if: always()
