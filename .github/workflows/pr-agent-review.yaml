@@ -1,4 +1,3 @@
-
 # =============================================================================
 # PRODUCTION PR REVIEW WORKFLOW  
 # =============================================================================
@@ -53,6 +52,20 @@ jobs:
         echo "Sender Type: ${{ github.event.sender.type }}"
         echo "Repository: ${{ github.repository }}"
         echo ""
+        echo "🔧 Expected PR-Agent Behavior:"
+        if [[ "${{ github.event.action }}" == "synchronize" ]]; then
+          echo "  - This is a SYNCHRONIZE event (new commits)"
+          echo "  - PR-Agent should handle this via PUSH TRIGGER system"
+          echo "  - Commands will be: /describe, /review, /improve"
+        elif [[ "${{ github.event.action }}" == "opened" ]] || [[ "${{ github.event.action }}" == "reopened" ]] || [[ "${{ github.event.action }}" == "ready_for_review" ]]; then
+          echo "  - This is a ${{ github.event.action }} event"
+          echo "  - PR-Agent should handle this via PR ACTIONS system"
+          echo "  - Commands will be: /describe, /review, /improve"
+        else
+          echo "  - This is a ${{ github.event.action }} event"
+          echo "  - PR-Agent may skip this event type"
+        fi
+        echo ""
 
     - name: Check Kaito Backend Health
       run: |
@@ -88,12 +101,14 @@ jobs:
         # Ollama/Kaito endpoint configuration
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
         
-        # GitHub event handling (matching .secrets.toml settings)
-        GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
+        # GitHub event handling (matching .secrets.toml settings exactly)
+        GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review"
         GITHUB.HANDLE_PUSH_TRIGGER: "true"
         GITHUB.PUSH_TRIGGER_IGNORE_BOT_COMMITS: "true"
         GITHUB.PUSH_TRIGGER_IGNORE_MERGE_COMMITS: "true"
         GITHUB.PUSH_TRIGGER_WAIT_FOR_INITIAL_REVIEW: "true"
+        GITHUB.PUSH_TRIGGER_PENDING_TASKS_BACKLOG: "true"
+        GITHUB.PUSH_TRIGGER_PENDING_TASKS_TTL: "300"
         GITHUB.PR_COMMANDS: "/describe,/review,/improve"
         GITHUB.PUSH_COMMANDS: "/describe,/review,/improve"
         
