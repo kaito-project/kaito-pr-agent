@@ -101,7 +101,7 @@ jobs:
         # Ollama/Kaito endpoint configuration
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
         
-        # GitHub event handling (matching .secrets.toml settings exactly)
+        # GitHub event handling
         GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review"
         GITHUB.HANDLE_PUSH_TRIGGER: "true"
         GITHUB.PUSH_TRIGGER_IGNORE_BOT_COMMITS: "true"
@@ -112,7 +112,7 @@ jobs:
         GITHUB.PR_COMMANDS: "/describe,/review,/improve"
         GITHUB.PUSH_COMMANDS: "/describe,/review,/improve"
         
-        # PR Description settings (matching .secrets.toml)
+        # PR Description settings
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
         PR_DESCRIPTION.ENABLE_PR_TYPE: "false"
@@ -120,7 +120,7 @@ jobs:
         PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
         PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
         
-        # PR Reviewer settings (matching .secrets.toml)
+        # PR Reviewer settings
         PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
         PR_REVIEWER.ENABLE_REVIEW_LABELS_EFFORT: "true"
         PR_REVIEWER.ENABLE_AUTO_APPROVAL: "false"
