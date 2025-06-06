@@ -24,18 +24,24 @@ concurrency:
   group: e2e-tests-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
   e2e_test:
     # Skip E2E test PRs to avoid infinite recursion
     if: ${{ !contains(github.event.pull_request.title, '[E2E Test]') && !contains(github.event.pull_request.head.ref, 'e2e-test-') }}
-    runs-on: ubuntu-latest
+    runs-on: [ "self-hosted", "hostname:kaito-e2e-github-runner-2" ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     name: E2E Test PR-Agent Docker Image
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+          disable-sudo: false  # Need sudo for Docker operations
+          disable-telemetry: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -96,9 +102,17 @@ jobs:
           
           if [ -z "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}" ]; then
             echo "❌ ERROR: KAITO_PR_REVIEWER_WORKSPACE_URL secret is not set"
-            echo "Please set the Kaito load balancer endpoint URL"
+            echo "Please set the Kaito load balancer endpoint URL in repository secrets"
             exit 1
           fi
+          
+          echo "🔧 Verifying self-hosted runner access to Kaito backend..."
+          curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null || {
+            echo "❌ ERROR: Cannot access Kaito backend from self-hosted runner"
+            echo "Kaito URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
+            exit 1
+          }
+          echo "✅ Kaito backend is accessible from self-hosted runner"
           
           echo "🧪 Running E2E test with built Docker image..."
           echo "Image: ${{ steps.image_tag.outputs.image_tag }}"
