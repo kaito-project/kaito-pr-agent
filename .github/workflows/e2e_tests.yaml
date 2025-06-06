@@ -24,16 +24,25 @@ concurrency:
   group: e2e-tests-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
   e2e_test:
-    runs-on: ubuntu-latest
+    # Skip E2E test PRs to avoid infinite recursion
+    # This checks: PR title doesn't contain [E2E Test], branch name doesn't start with e2e-test-, and PR title doesn't contain e2e-test-
+    if: ${{ !contains(github.event.pull_request.title, '[E2E Test]') && !startsWith(github.event.pull_request.head.ref, 'e2e-test-') && !contains(github.event.pull_request.title, 'e2e-test-') }}
+    runs-on: [ "self-hosted", "hostname:kaito-e2e-github-runner-2" ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     name: E2E Test PR-Agent Docker Image
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+          disable-sudo: false  # Need sudo for Docker operations
+          disable-telemetry: true
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -72,9 +81,48 @@ jobs:
 
       - name: Run E2E Test
         env:
+          # GitHub configuration
           GITHUB.USER_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
           GITHUB.DEPLOYMENT_TYPE: user
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY || secrets.AZURE_OPENAI_API_KEY }}
+          
+          # Model configuration (matching .secrets.toml)
+          CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
+          CONFIG.FALLBACK_MODELS: "hosted_vllm/qwen2.5-coder-32b-instruct"
+          CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
+          CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
+          CONFIG.AI_TIMEOUT: "600"
+          
+          # Ollama/Kaito endpoint configuration
+          OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
+          
+          # GitHub event handling (matching .secrets.toml settings)
+          GITHUB.HANDLE_PR_ACTIONS: "opened,reopened,ready_for_review"
+          GITHUB.HANDLE_PUSH_TRIGGER: "true"
+          GITHUB.PUSH_TRIGGER_IGNORE_BOT_COMMITS: "true"
+          GITHUB.PUSH_TRIGGER_IGNORE_MERGE_COMMITS: "true"
+          GITHUB.PUSH_TRIGGER_WAIT_FOR_INITIAL_REVIEW: "true"
+          GITHUB.PR_COMMANDS: "/describe,/review,/improve"
+          GITHUB.PUSH_COMMANDS: "/describe,/review,/improve"
+          
+          # PR Description settings (matching .secrets.toml)
+          PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
+          PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
+          PR_DESCRIPTION.ENABLE_PR_TYPE: "false"
+          PR_DESCRIPTION.ADD_ORIGINAL_USER_DESCRIPTION: "false"
+          PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
+          PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
+          
+          # PR Reviewer settings (matching .secrets.toml)
+          PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
+          
+          # PR Code Suggestions settings
+          PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
+          
+          # Output configuration
+          CONFIG.PUBLISH_OUTPUT: "true"
+          CONFIG.VERBOSITY_LEVEL: "1"
+          
+          # E2E Test specific
           E2E_DOCKER_IMAGE: ${{ steps.image_tag.outputs.image_tag }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
@@ -85,11 +133,28 @@ jobs:
             exit 1
           fi
           
+          if [ -z "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}" ]; then
+            echo "❌ ERROR: KAITO_PR_REVIEWER_WORKSPACE_URL secret is not set"
+            echo "Please set the Kaito load balancer endpoint URL in repository secrets"
+            exit 1
+          fi
+          
+          echo "🔧 Verifying self-hosted runner access to Kaito backend..."
+          curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null || {
+            echo "❌ ERROR: Cannot access Kaito backend from self-hosted runner"
+            echo "Kaito URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
+            exit 1
+          }
+          echo "✅ Kaito backend is accessible from self-hosted runner"
+          
           echo "🧪 Running E2E test with built Docker image..."
           echo "Image: ${{ steps.image_tag.outputs.image_tag }}"
+          echo "Backend: Kaito (${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }})"
+          echo "Model: hosted_vllm/qwen2.5-coder-32b-instruct"
+          echo ""
           echo "This test will:"
           echo "  1. Create a test PR in this repository"
-          echo "  2. Run the built PR-Agent image on that PR"
+          echo "  2. Run the built PR-Agent image on that PR using Kaito backend"
           echo "  3. Validate that describe/review/improve tools work"
           echo "  4. Clean up the test PR"
           echo ""
