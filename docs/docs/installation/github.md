@@ -96,6 +96,8 @@ See detailed usage instructions in the [USAGE GUIDE](https://qodo-merge-docs.qod
 
 Allowing you to automate the review process on your private or public repositories.
 
+**Deployment Note**: When running as a GitHub App, PR-Agent typically runs as a pod within your Kubernetes cluster. This allows direct access to your Kaito backend via ClusterIP (no load balancer needed for backend connectivity). However, you'll need a load balancer or ingress to expose the PR-Agent webhook endpoint so GitHub can send events to it.
+
 1) Create a GitHub App from the [Github Developer Portal](https://docs.github.com/en/developers/apps/creating-a-github-app).
 
    - Set the following permissions:
@@ -132,11 +134,12 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
 # Edit .secrets.toml file
 ```
 
-- Your OpenAI key.
+- Your Kaito backend URL (use ClusterIP if running in-cluster, e.g., `http://workspace-qwen-2-5-coder-32b-instruct.default.svc/v1`)
 - Copy your app's private key to the private_key field.
 - Copy your app's ID to the app_id field.
 - Copy your app's webhook secret to the webhook_secret field.
 - Set deployment_type to 'app' in [configuration.toml](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml)
+- Set your Kaito model: `CONFIG.MODEL = "hosted_vllm/your-kaito-model"`
 
     > The .secrets.toml file is not copied to the Docker image by default, and is only used for local development.
     > If you want to use the .secrets.toml file in your Docker image, you can add remove it from the .dockerignore file.
@@ -159,11 +162,16 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
 
     > Another option is to set the secrets as environment variables in your deployment environment, for example `OPENAI.KEY` and `GITHUB.USER_TOKEN`.
 
-6) Build a Docker image for the app and optionally push it to a Docker repository. We'll use Dockerhub as an example:
-
+6) Use a Docker image for the app:
+    **Option A: Use stable production image (recommended)**
     ```bash
-    docker build . -t codiumai/pr-agent:github_app --target github_app -f docker/Dockerfile
-    docker push codiumai/pr-agent:github_app  # Push to your Docker repository
+    docker pull ghcr.io/kaito-project/kaito-pr-agent:latest
+    ```
+
+    **Option B: Build custom image (only needed if you modified the PR-Agent code)**
+    ```bash
+    docker build . -t kaito-project/kaito-pr-agent:custom --target github_app -f docker/Dockerfile
+    docker push kaito-project/kaito-pr-agent:custom
     ```
 
 7. Host the app using a server, serverless function, or container environment. Alternatively, for development and
