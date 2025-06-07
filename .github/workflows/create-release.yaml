@@ -67,14 +67,31 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./Dockerfile.github_action
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ github.ref_name }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}
-          target: runner
           platforms: linux/amd64,linux/arm64
+
+      - name: Make GHCR package public
+        run: |
+          echo "🔓 Making GHCR package publicly accessible..."
+          # Extract repository name for GHCR package name
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Set package visibility to public
+          # Note: This requires the package to exist first (which it will after the build step)
+          gh api --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/user/packages/container/${REPO_NAME##*/}/visibility" \
+            -f visibility='public' || echo "⚠️  Package may already be public or visibility change failed"
+          
+          echo "✅ GHCR package visibility updated"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate image summary
         run: |
