@@ -1,11 +1,11 @@
 # =============================================================================
 # PRODUCTION PR REVIEW WORKFLOW  
 # =============================================================================
-# This workflow uses the PRODUCTION version of PR-Agent to automatically
+# This workflow uses a STABLE RELEASED version of PR-Agent to automatically
 # review PRs opened against this repository using the Kaito backend.
 #
 # Purpose: Provide stable, reliable PR reviews for contributors
-# Code Used: Production version (stable, tested)
+# Code Used: Latest stable release from GHCR (falls back to main if no release)
 # Backend: Kaito load balancer endpoint (via self-hosted runner)
 # =============================================================================
 
@@ -81,10 +81,115 @@ jobs:
           echo "This will cause PR review to fail"
           exit 1
         fi
-    
-    - name: Run Production PR-Agent Review
-      id: pragent
-      uses: kaito-project/kaito-pr-agent@main  # Uses production version
+
+    - name: Determine PR-Agent Version Strategy
+      id: version
+      run: |
+        echo "🔍 Determining PR-Agent version strategy..."
+        
+        # Check if we have any releases
+        LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
+        
+        if [[ -n "$LATEST_RELEASE" ]]; then
+          # Use stable GHCR image
+          echo "✅ Found latest release: $LATEST_RELEASE"
+          echo "strategy=ghcr" >> $GITHUB_OUTPUT
+          echo "version=$LATEST_RELEASE" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository }}:$LATEST_RELEASE" >> $GITHUB_OUTPUT
+          echo "🐳 Will use stable GHCR image: ghcr.io/${{ github.repository }}:$LATEST_RELEASE"
+        else
+          # Fallback to main branch
+          echo "⚠️  No releases found, falling back to main branch"
+          echo "strategy=main" >> $GITHUB_OUTPUT
+          echo "version=main" >> $GITHUB_OUTPUT
+          echo "image=main" >> $GITHUB_OUTPUT
+          echo "🔄 Will use main branch (development version)"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run PR-Agent Review (Stable GHCR Image)
+      id: pragent_ghcr
+      if: steps.version.outputs.strategy == 'ghcr'
+      run: |
+        echo "🐳 Running PR-Agent using GHCR image: ${{ steps.version.outputs.image }}"
+        docker run --rm \
+          -e CONFIG.MODEL \
+          -e CONFIG.CUSTOM_MODEL_MAX_TOKENS \
+          -e CONFIG.DUPLICATE_PROMPT_EXAMPLES \
+          -e CONFIG.AI_TIMEOUT \
+          -e GITHUB_TOKEN \
+          -e GITHUB.USER_TOKEN \
+          -e GITHUB.DEPLOYMENT_TYPE \
+          -e OLLAMA.API_BASE \
+          -e GITHUB_ACTION_CONFIG.AUTO_DESCRIBE \
+          -e GITHUB_ACTION_CONFIG.AUTO_REVIEW \
+          -e GITHUB_ACTION_CONFIG.AUTO_IMPROVE \
+          -e GITHUB_ACTION_CONFIG.PR_ACTIONS \
+          -e PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT \
+          -e PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT \
+          -e PR_DESCRIPTION.GENERATE_AI_TITLE \
+          -e PR_DESCRIPTION.FINAL_UPDATE_MESSAGE \
+          -e PR_REVIEWER.PERSISTENT_COMMENT \
+          -e PR_REVIEWER.FINAL_UPDATE_MESSAGE \
+          -e PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT \
+          -e PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS \
+          -e CONFIG.PUBLISH_OUTPUT \
+          -e GITHUB_REPOSITORY \
+          -e GITHUB_EVENT_NAME \
+          -e GITHUB_EVENT_PATH \
+          -e GITHUB_WORKSPACE \
+          -e GITHUB_SHA \
+          -e GITHUB_REF \
+          -e GITHUB_HEAD_REF \
+          -e GITHUB_BASE_REF \
+          -e GITHUB_ACTOR \
+          -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+          -v "$GITHUB_EVENT_PATH:$GITHUB_EVENT_PATH" \
+          -w "$GITHUB_WORKSPACE" \
+          "${{ steps.version.outputs.image }}"
+      env:
+        # Model configuration
+        CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
+        CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
+        CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
+        CONFIG.AI_TIMEOUT: "600"
+        
+        # GitHub configuration
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB.DEPLOYMENT_TYPE: "user"
+        
+        # Kaito endpoint
+        OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
+        
+        # GitHub Action configuration (critical for event handling)
+        GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
+        GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
+        GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
+        GITHUB_ACTION_CONFIG.PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
+        
+        # PR Description settings (key settings from .secrets.toml)
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
+        PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
+        PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
+        PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Reviewer settings
+        PR_REVIEWER.PERSISTENT_COMMENT: "true"
+        PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
+        
+        # PR Code Suggestions settings (prevent duplicate comments)
+        PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT: "true"
+        PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
+        
+        # Output configuration
+        CONFIG.PUBLISH_OUTPUT: "true"
+
+    - name: Run PR-Agent Review (Main Branch Fallback)
+      id: pragent_main
+      if: steps.version.outputs.strategy == 'main'
+      uses: kaito-project/kaito-pr-agent@main
       env:
         # Model configuration
         CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
@@ -127,9 +232,20 @@ jobs:
       if: always()
       run: |
         echo "🔍 Checking PR-Agent results..."
-        echo "Step outcome: ${{ steps.pragent.outcome }}"
         
-        if [[ "${{ steps.pragent.outcome }}" == "success" ]]; then
+        # Determine which step ran and its outcome
+        if [[ "${{ steps.version.outputs.strategy }}" == "ghcr" ]]; then
+          STEP_OUTCOME="${{ steps.pragent_ghcr.outcome }}"
+          STRATEGY="stable GHCR image (${{ steps.version.outputs.version }})"
+        else
+          STEP_OUTCOME="${{ steps.pragent_main.outcome }}"
+          STRATEGY="main branch (development)"
+        fi
+        
+        echo "Strategy used: $STRATEGY"
+        echo "Step outcome: $STEP_OUTCOME"
+        
+        if [[ "$STEP_OUTCOME" == "success" ]]; then
           echo "✅ PR Review completed successfully!"
           echo "Check the PR for review comments and description updates."
         else
@@ -138,4 +254,7 @@ jobs:
           echo "  - Kaito backend connectivity"
           echo "  - GitHub token permissions"
           echo "  - Event type not handled by PR-Agent"
+          if [[ "${{ steps.version.outputs.strategy }}" == "ghcr" ]]; then
+            echo "  - GHCR image not accessible or doesn't exist"
+          fi
         fi
