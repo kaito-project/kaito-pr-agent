@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: pr-agent-app
-          image: <ACR_LINK>/kaito-pr-agent:<TAG_HERE>
+          image: ghcr.io/kaito-project/kaito-pr-agent:latest
           livenessProbe:
             httpGet:
               path: /

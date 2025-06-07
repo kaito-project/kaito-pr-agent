@@ -9,11 +9,9 @@ See [NOTICE](NOTICE) for attribution details.
 
 </div>
 
-This repository demonstrates how to run PR-Agent with Kaito as the backend for code review automation. It includes:
+## Why We Forked PR-Agent
 
-- A Kubernetes Deployment to run PR-Agent using Kaito
-- A Docker script for local testing
-- A GitHub Action for automated reviews
+We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate **Kaito RAGEngine** as the backend, improving PR-Agent's performance by gathering additional context from your codebase. This enhanced contextual understanding allows for more accurate code reviews, better suggestions, and smarter PR descriptions.
 
 ---
 

@@ -21,30 +21,34 @@ jobs:
     steps:
       - name: PR Agent action step
         id: pragent
-        uses: qodo-ai/pr-agent@main
+        uses: docker://ghcr.io/kaito-project/kaito-pr-agent:latest
         env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OLLAMA.API_BASE: ${{ secrets.KAITO_WORKSPACE_URL }}
+          CONFIG.MODEL: "hosted_vllm/qwen2.5-coder-32b-instruct"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-2) Add the following secret to your repository under `Settings > Secrets and variables > Actions > New repository secret > Add secret`:
+2) Add the following secrets to your repository under `Settings > Secrets and variables > Actions > New repository secret`:
 
 ```
-Name = OPENAI_KEY
-Secret = <your key>
+Name = KAITO_WORKSPACE_URL
+Secret = http://<LOAD_BALANCER_IP>/v1
 ```
+
+Replace `<LOAD_BALANCER_IP>` with your Kaito workspace's public load balancer IP. This URL should point to your exposed Kaito backend endpoint.
 
 The GITHUB_TOKEN secret is automatically created by GitHub.
 
 3) Merge this change to your main branch.
 When you open your next PR, you should see a comment from `github-actions` bot with a review of your PR, and instructions on how to use the rest of the tools.
 
-4) You may configure Qodo Merge by adding environment variables under the env section corresponding to any configurable property in the [configuration](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml) file. Some examples:
+4) You may configure PR-Agent by adding environment variables under the env section corresponding to any configurable property in the [configuration](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml) file. Some examples:
 
 ```yaml
       env:
         # ... previous environment values
-        OPENAI.ORG: "<Your organization name under your OpenAI account>"
+        CONFIG.MODEL: "hosted_vllm/your-kaito-model-name" # Change to your specific Kaito model
+        CONFIG.AI_TIMEOUT: "600" # Increase timeout for larger models
         PR_REVIEWER.REQUIRE_TESTS_REVIEW: "false" # Disable tests review
         PR_CODE_SUGGESTIONS.NUM_CODE_SUGGESTIONS: 6 # Increase number of code suggestions
 ```
@@ -118,7 +122,7 @@ WEBHOOK_SECRET=$(python -c "import secrets; print(secrets.token_hex(10))")
 4) Clone this repository:
 
 ```bash
-git clone https://github.com/Codium-ai/pr-agent.git
+git clone https://github.com/kaito-project/kaito-pr-agent.git
 ```
 
 5) Copy the secrets template file and fill in the following:
