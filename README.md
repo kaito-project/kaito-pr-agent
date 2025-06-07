@@ -18,7 +18,7 @@ We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate *
 ### Architecture Diagram
 This diagram illustrates how the PR-Agent GitHub app works with Kaito.
 
-![Architecture Diagram](kaito-pr-agent-diagram.jpg)
+![Architecture Diagram](kaito-pr-agent-diagram.png)
 
 ---
 
