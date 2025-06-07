@@ -174,9 +174,18 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
     docker push kaito-project/kaito-pr-agent:custom
     ```
 
-7. Host the app using a server, serverless function, or container environment. Alternatively, for development and
-   debugging, you may use tools like smee.io to forward webhooks to your local machine.
-    You can check [Deploy as a Lambda Function](#deploy-as-a-lambda-function)
+7. Host the app using a server, serverless function, or container environment:
+
+    **Kubernetes Deployment (recommended)**
+    ```bash
+    # Clone the repository and apply the deployment
+    git clone https://github.com/kaito-project/kaito-pr-agent.git
+    kubectl apply -f kaito-pr-agent/deploy/k8s/pr-agent-github-app-deployment.yaml
+    ```
+    
+    **Alternative hosting options:**
+    - Serverless function (see [Deploy as a Lambda Function](#deploy-as-a-lambda-function))
+    - Development/debugging with smee.io to forward webhooks to your local machine
 
 8. Go back to your app's settings, and set the following:
 
