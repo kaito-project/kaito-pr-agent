@@ -72,6 +72,16 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Generate GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.E2E_GITHUB_APP_ID }}
+          private-key: ${{ secrets.E2E_GITHUB_APP_PRIVATE_KEY }}
+          # For organization apps, specify owner and repositories
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - name: Install E2E test dependencies
         run: |
           python -m pip install --upgrade pip
@@ -82,7 +92,7 @@ jobs:
       - name: Run E2E Test
         env:
           # GitHub configuration
-          GITHUB.USER_TOKEN: ${{ secrets.E2E_GITHUB_TOKEN }}
+          GITHUB.USER_TOKEN: ${{ steps.app_token.outputs.token }}
           GITHUB.DEPLOYMENT_TYPE: user
           
           # Model configuration
@@ -115,10 +125,25 @@ jobs:
           E2E_DOCKER_IMAGE: ${{ steps.image_tag.outputs.image_tag }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          if [ -z "${{ secrets.E2E_GITHUB_TOKEN }}" ]; then
-            echo "❌ ERROR: E2E_GITHUB_TOKEN secret is not set"
-            echo "Please create a Personal Access Token and add it as a repository secret"
-            echo "Instructions: https://github.com/settings/tokens/new"
+          if [ -z "${{ secrets.E2E_GITHUB_APP_ID }}" ] || [ -z "${{ secrets.E2E_GITHUB_APP_PRIVATE_KEY }}" ]; then
+            echo "❌ ERROR: GitHub App credentials are not properly configured"
+            echo "Missing secrets:"
+            if [ -z "${{ secrets.E2E_GITHUB_APP_ID }}" ]; then
+              echo "  - E2E_GITHUB_APP_ID (repository secret)"
+            fi
+            if [ -z "${{ secrets.E2E_GITHUB_APP_PRIVATE_KEY }}" ]; then
+              echo "  - E2E_GITHUB_APP_PRIVATE_KEY (repository secret)"
+            fi
+            echo ""
+            echo "Setup instructions:"
+            echo "1. Create a GitHub App in your organization:"
+            echo "   https://github.com/organizations/${{ github.repository_owner }}/settings/apps/new"
+            echo "2. Grant the app these permissions:"
+            echo "   - Repository permissions: Contents (Read), Issues (Write), Pull requests (Write)"
+            echo "   - Organization permissions: None needed"
+            echo "3. Install the app on this repository"
+            echo "4. Add the App ID as a repository secret: E2E_GITHUB_APP_ID"
+            echo "5. Add the private key as a repository secret: E2E_GITHUB_APP_PRIVATE_KEY"
             exit 1
           fi
           
