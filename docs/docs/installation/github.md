@@ -47,7 +47,7 @@ When you open your next PR, you should see a comment from `github-actions` bot w
 ```yaml
       env:
         # ... previous environment values
-        CONFIG.MODEL: "hosted_vllm/your-kaito-model-name" # Change to your specific Kaito model
+        CONFIG.MODEL: "hosted_vllm/your-kaito-model-name" # Example: "hosted_vllm/qwen2.5-coder-32b-instruct"
         CONFIG.AI_TIMEOUT: "600" # Increase timeout for larger models
         PR_REVIEWER.REQUIRE_TESTS_REVIEW: "false" # Disable tests review
         PR_CODE_SUGGESTIONS.NUM_CODE_SUGGESTIONS: 6 # Increase number of code suggestions
@@ -139,7 +139,7 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
 - Copy your app's ID to the app_id field.
 - Copy your app's webhook secret to the webhook_secret field.
 - Set deployment_type to 'app' in [configuration.toml](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml)
-- Set your Kaito model: `CONFIG.MODEL = "hosted_vllm/your-kaito-model"`
+- Set your Kaito model: `CONFIG.MODEL = "hosted_vllm/your-kaito-model"` (e.g., `"hosted_vllm/qwen2.5-coder-32b-instruct"`)
 
     > The .secrets.toml file is not copied to the Docker image by default, and is only used for local development.
     > If you want to use the .secrets.toml file in your Docker image, you can add remove it from the .dockerignore file.
