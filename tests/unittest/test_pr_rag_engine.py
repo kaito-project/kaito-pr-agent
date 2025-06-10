@@ -40,6 +40,7 @@ def test_documents():
 def mock_rag_client():
     client = MagicMock()
     client.list_indexes.return_value = ["owner_repo_main", "owner_repo_feature_test"]
+    client.delete_index.return_value = {"status": "deleted"}
     client.index_documents.return_value = {"status": "success"}
     client.update_documents.return_value = {"status": "updated"}
     client.delete_documents.return_value = {"status": "deleted"}
@@ -130,3 +131,14 @@ def test_create_new_base_index(mock_rag_client, mock_git_provider):
         assert args[1][0]["metadata"]["file_name"] == "test_file.py"
         assert args[1][0]["metadata"]["language"] == "python"
         assert args[1][0]["metadata"]["split_type"] == "code"
+
+def test_delete_pr_index(mock_rag_client, mock_git_provider):
+    engine = PRRagEngine("http://fake-url")
+    engine.rag_client = mock_rag_client
+
+    with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
+        engine.delete_pr_index("http://pr-url")
+        mock_rag_client.list_indexes.assert_called_once()
+        mock_rag_client.delete_index.assert_called_once()
+        args, kwargs = mock_rag_client.delete_index.call_args
+        assert args[0] == "owner_repo_feature_test"

@@ -259,9 +259,12 @@ def handle_closed_pr(body, event, action, log_context):
         get_logger().info("PR-Agent statistics for closed PR", analytics=True, pr_statistics=pr_statistics, **log_context)
     if use_rag_engine:
         try:
+            # handle merging of head changes into base branch index
             ragEngine.update_base_branch_index(api_url)
+            # clenup the index created for the head branch of the PR
+            ragEngine.delete_pr_index(api_url)
         except Exception as e:
-            get_logger().error(f"Failed to update base branch index for {api_url=}: {e}")
+            get_logger().error(f"Failed to handle pr merged rag logic for {api_url=}: {e}")
 
 
 def get_log_context(body, event, action, build_number):

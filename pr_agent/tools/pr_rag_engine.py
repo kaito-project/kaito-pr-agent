@@ -313,6 +313,28 @@ class PRRagEngine:
         except Exception as e:
             get_logger().error(f"Error updating documents: {e}")
             raise e
+    
+    def delete_pr_index(self, pr_url: str):
+        """
+        Deletes the RAG index for a given pull request (PR) URL.
+        This method retrieves the git provider for the PR URL, constructs the index name,
+        and deletes the index using the RAG client.
+        Args:
+            pr_url (str): The URL of the pull request whose index should be deleted.
+        Raises:
+            Exception: If an error occurs during the deletion process.
+        """
+        try:
+            git_provider = self._get_git_provider(pr_url)
+            index_name = self._get_pr_head_index_name(git_provider)
+            if not self._does_index_exist(index_name):
+                get_logger().info(f"Index {index_name} does not exist. No action taken.")
+                return
+            get_logger().info(f"Deleting index {index_name} for PR URL {pr_url}.")
+            self.rag_client.delete_index(index_name)
+        except Exception as e:
+            get_logger().error(f"Error deleting PR index: {e}")
+            raise e
 
     def file_extension_to_language(self, filename: str):
         """
