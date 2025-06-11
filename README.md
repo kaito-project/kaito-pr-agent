@@ -70,3 +70,16 @@ Ensure these values are correctly set in your Docker environment, Kubernetes job
 - **Documentation**: [Kaito Docs](https://github.com/Azure/kaito/tree/main/docs)
 - **Support**: Open an issue in this repository
 
+## License
+
+See [LICENSE](LICENSE) for license information.
+
+## Credits
+
+This project is a fork of [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent). All credit for the original work and core functionality goes to the qodo-ai/pr-agent authors and contributors. We are grateful for their excellent work that made this fork possible.
+
+For detailed attribution information, see [NOTICE](NOTICE).
+
+## Contact
+
+"Kaito devs" <kaito-dev@microsoft.com>
