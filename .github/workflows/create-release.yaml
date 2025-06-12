@@ -101,13 +101,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Version tags for releases
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            # Latest tag for releases and manual builds (if requested)
-            type=raw,value=latest,enable={{is_default_branch}},priority=100
+            # Version tags for manual releases
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{version}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{major}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            # Latest tag for manual builds (if requested)
             type=raw,value=latest,enable=${{ github.event.inputs.tag_as_latest == 'true' }},priority=100
 
       - name: Build and push Docker image
@@ -154,5 +153,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Usage example**:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag_as_latest == 'true' && 'latest' || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag_as_latest == 'true' && 'latest' || github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY 
