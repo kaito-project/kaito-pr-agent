@@ -7,20 +7,22 @@ name: Create Image Release
 # 
 # Triggers:
 # - New releases: Publishes versioned tags (e.g., 'v1.0.0')
-# - Manual trigger: For emergency/testing releases
+# - Manual trigger: For emergency/testing releases with version tagging
 # 
 # Note: This is separate from CI testing (ci-build-and-test.yaml) and docker-release.yaml
 # =============================================================================
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Release version (e.g. v0.2.2) - creates tag and branch from main'
+        required: true
+        type: string
       tag_as_latest:
         description: 'Tag this build as latest'
         required: false
-        default: false
+        default: true
         type: boolean
 
 env:
@@ -31,12 +33,57 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up git configuration
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Create tag from main
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🏷️ Creating tag $VERSION from main branch..."
+          git checkout main
+          git pull origin main
+          git tag $VERSION -m "Release $VERSION"
+          git push origin $VERSION
+          echo "✅ Tag $VERSION created and pushed"
+
+      - name: Create official release branch
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🌿 Creating official release branch official/$VERSION..."
+          git checkout -b official/$VERSION $VERSION
+          git push origin official/$VERSION
+          echo "✅ Branch official/$VERSION created and pushed"
+
+      - name: Create GitHub Release with auto-generated notes
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📝 Creating GitHub release with auto-generated notes..."
+          gh release create $VERSION \
+            --title "Release $VERSION" \
+            --generate-notes \
+            --target main
+          echo "✅ GitHub release created with PR changelog"
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,13 +101,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Version tags for releases
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            # Latest tag for releases and manual builds (if requested)
-            type=raw,value=latest,enable={{is_default_branch}},priority=100
+            # Version tags for manual releases
+            type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{version}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            type=semver,pattern={{major}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
+            # Latest tag for manual builds (if requested)
             type=raw,value=latest,enable=${{ github.event.inputs.tag_as_latest == 'true' }},priority=100
 
       - name: Build and push Docker image
@@ -107,5 +153,5 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Usage example**:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag_as_latest == 'true' && 'latest' || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag_as_latest == 'true' && 'latest' || github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY 
