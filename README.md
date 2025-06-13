@@ -15,6 +15,20 @@ We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate *
 
 ---
 
+## 🚀 Quick Start
+
+Get started in minutes with GitHub integration:
+
+### GitHub Action
+Easy setup, no infrastructure needed. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-action)**
+
+### GitHub App (Advanced)
+More control, runs in your infrastructure. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-app)**
+
+> **Prerequisites:** You'll need a [Kaito workspace](https://github.com/kaito-project/kaito) running with your preferred model.
+
+---
+
 ### Architecture Diagram
 This diagram illustrates how the PR-Agent GitHub app works with Kaito.
 
