@@ -48,6 +48,22 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
+      - name: Check if release already exists
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Checking if release $VERSION already exists..."
+          if gh release view $VERSION >/dev/null 2>&1; then
+            echo "❌ Release $VERSION already exists!"
+            echo "Please use a different version or delete the existing release first."
+            echo "Existing releases:"
+            gh release list --limit 5
+            exit 1
+          fi
+          echo "✅ Release $VERSION does not exist, proceeding..."
+
       - name: Create tag from main
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
         env:
@@ -104,8 +120,6 @@ jobs:
             # Version tags for manual releases
             type=raw,value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
             type=semver,pattern={{version}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
-            type=semver,pattern={{major}},value=${{ github.event.inputs.version }},enable=${{ github.event.inputs.version != '' }}
             # Latest tag for manual builds (if requested)
             type=raw,value=latest,enable=${{ github.event.inputs.tag_as_latest == 'true' }},priority=100
 
