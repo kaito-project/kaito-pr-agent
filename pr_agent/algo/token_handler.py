@@ -95,6 +95,7 @@ class TokenHandler:
     def calc_claude_tokens(self, patch):
         try:
             import anthropic
+
             from pr_agent.algo import MAX_TOKENS
             client = anthropic.Anthropic(api_key=get_settings(use_context=False).get('anthropic.key'))
             MaxTokens = MAX_TOKENS[get_settings().config.model]
@@ -121,8 +122,8 @@ class TokenHandler:
             return MaxTokens
 
     def estimate_token_count_for_non_anth_claude_models(self, model, default_encoder_estimate):
-        from math import ceil
         import re
+        from math import ceil
 
         model_is_from_o_series = re.match(r"^o[1-9](-mini|-preview)?$", model)
         if ('gpt' in get_settings().config.model.lower() or model_is_from_o_series) and get_settings(use_context=False).get('openai.key'):

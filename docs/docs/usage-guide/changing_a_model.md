@@ -100,7 +100,7 @@ Please note that the `custom_model_max_tokens` setting should be configured in a
     Commercial models such as GPT-4, Claude Sonnet, and Gemini have demonstrated robust capabilities in generating structured output for code analysis tasks with large input. In contrast, most open-source models currently available (as of January 2025) face challenges with these complex tasks.
 
     Based on our testing, local open-source models are suitable for experimentation and learning purposes (mainly for the `ask` command), but they are not suitable for production-level code analysis tasks.
-    
+
     Hence, for production workflows and real-world usage, we recommend using commercial models.
 
 ### Hugging Face
@@ -300,7 +300,7 @@ key = "..." # your Codestral api key
 To use model from Openrouter, for example, set:
 
 ```toml
-[config] # in configuration.toml 
+[config] # in configuration.toml
 model="openrouter/anthropic/claude-3.7-sonnet"
 fallback_models=["openrouter/deepseek/deepseek-chat"]
 custom_model_max_tokens=20000

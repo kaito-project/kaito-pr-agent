@@ -247,16 +247,16 @@ Learn more about utilizing 'auto best practices' in our [detailed guide](https:/
 ```toml
 [auto_best_practices]
 # Disable all auto best practices usage or generation
-enable_auto_best_practices = true  
+enable_auto_best_practices = true
 
 # Disable usage of auto best practices file in the 'improve' tool
-utilize_auto_best_practices = true 
+utilize_auto_best_practices = true
 
 # Extra instructions to the auto best practices generation prompt
-extra_instructions = ""            
+extra_instructions = ""
 
 # Max number of patterns to be detected
-max_patterns = 5                   
+max_patterns = 5
 ```
 
 ### Multiple best practices sources
@@ -289,7 +289,7 @@ In addition to mistakes (which may happen, but are rare), sometimes the presente
 In such cases, we recommend prioritizing the suggestion's detailed description, using the diff snippet primarily as a supporting reference.
 
 
-### Chat on code suggestions 
+### Chat on code suggestions
 
 > `💎 feature` Platforms supported: GitHub, GitLab
 
@@ -502,7 +502,7 @@ Note: Chunking is primarily relevant for large PRs. For most PRs (up to 600 line
       </tr>
       <tr>
         <td><b>focus_only_on_problems</b></td>
-        <td>If set to true, suggestions will focus primarily on identifying and fixing code problems, and less on style considerations like best practices, maintainability, or readability. Default is true.</td> 
+        <td>If set to true, suggestions will focus primarily on identifying and fixing code problems, and less on style considerations like best practices, maintainability, or readability. Default is true.</td>
       </tr>
       <tr>
         <td><b>persistent_comment</b></td>

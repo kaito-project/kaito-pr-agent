@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC, abstractmethod
 # enum EDIT_TYPE (ADDED, DELETED, MODIFIED, RENAMED)
 import os
 import shutil
 import subprocess
+from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 
 from pr_agent.algo.types import FilePatchInfo

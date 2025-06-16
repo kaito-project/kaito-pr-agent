@@ -1,9 +1,11 @@
-import pytest
 import base64
 from unittest.mock import MagicMock, patch
 
-from pr_agent.tools.pr_rag_engine import PRRagEngine
+import pytest
+
 from pr_agent.algo.types import EDIT_TYPE
+from pr_agent.tools.pr_rag_engine import PRRagEngine
+
 
 def test_documents():
     return [

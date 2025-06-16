@@ -11,19 +11,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
+
 import litellm
 import openai
 import requests
 from litellm import acompletion
-from tenacity import retry, retry_if_exception_type, retry_if_not_exception_type, stop_after_attempt
+from tenacity import (retry, retry_if_exception_type,
+                      retry_if_not_exception_type, stop_after_attempt)
 
-from pr_agent.algo import CLAUDE_EXTENDED_THINKING_MODELS, NO_SUPPORT_TEMPERATURE_MODELS, SUPPORT_REASONING_EFFORT_MODELS, USER_MESSAGE_ONLY_MODELS
+from pr_agent.algo import (CLAUDE_EXTENDED_THINKING_MODELS,
+                           NO_SUPPORT_TEMPERATURE_MODELS,
+                           SUPPORT_REASONING_EFFORT_MODELS,
+                           USER_MESSAGE_ONLY_MODELS)
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.utils import ReasoningEffort, get_version
 from pr_agent.config_loader import get_settings
 from pr_agent.log import get_logger
-import json
 
 OPENAI_RETRIES = 5
 
@@ -43,7 +48,7 @@ class LiteLLMAIHandler(BaseAiHandler):
         self.azure = False
         self.api_base = None
         self.repetition_penalty = None
-        
+
         if get_settings().get("OPENAI.KEY", None):
             openai.api_key = get_settings().openai.key
             litellm.openai_key = get_settings().openai.key
@@ -114,7 +119,7 @@ class LiteLLMAIHandler(BaseAiHandler):
         # Support mistral models
         if get_settings().get("MISTRAL.KEY", None):
             os.environ["MISTRAL_API_KEY"] = get_settings().get("MISTRAL.KEY")
-        
+
         # Support codestral models
         if get_settings().get("CODESTRAL.KEY", None):
             os.environ["CODESTRAL_API_KEY"] = get_settings().get("CODESTRAL.KEY")
@@ -126,7 +131,7 @@ class LiteLLMAIHandler(BaseAiHandler):
             access_token = self._get_azure_ad_token()
             litellm.api_key = access_token
             openai.api_key = access_token
-            
+
             # Set API base from settings
             self.api_base = get_settings().azure_ad.api_base
             litellm.api_base = self.api_base

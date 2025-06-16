@@ -86,7 +86,7 @@ jobs:
             -c "cd /app && \
             echo 'Running Issue Agent action step on ISSUE_URL=$ISSUE_URL' && \
             export config__git_provider='github' && \
-            export github__user_token=$GITHUB_TOKEN && \            
+            export github__user_token=$GITHUB_TOKEN && \
             export github__base_url=$GITHUB_API_URL && \
             export openai__key=$OPENAI_KEY && \
             python -m pr_agent.cli --issue_url=$ISSUE_URL --pr_help_docs.repo_url="..." --pr_help_docs.docs_path="..." --pr_help_docs.openai_key=$OPENAI_KEY && \help_docs \"$ISSUE_BODY\""

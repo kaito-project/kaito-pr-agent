@@ -1,5 +1,7 @@
-import requests
 import json
+
+import requests
+
 
 class KAITORagClient:
     def __init__(self, base_url):
@@ -105,7 +107,7 @@ class KAITORagClient:
         resp = requests.post(url, params=params, headers=self.headers)
         resp.raise_for_status()
         return resp.json()
-    
+
     def delete_index(self, index_name):
         """
         Delete an index in the RAGEngine.

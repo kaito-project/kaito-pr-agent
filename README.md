@@ -1,10 +1,10 @@
 # Kaito PR-Agent
 
 <div align="center">
-  
+
 **AI-powered code review automation using Kaito as the backend**
 
-This is a fork of [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) modified for the Kaito project.  
+This is a fork of [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) modified for the Kaito project.
 See [NOTICE](NOTICE) for attribution details.
 
 </div>
@@ -76,7 +76,7 @@ Use the provided workflow in `.github/pr-review.yaml` to automate PR reviews.
 In all setups, replace the following placeholders with your actual values:
 
 - **OLLAMA_API_BASE** → Your Kaito workspace URL
-- **GITHUB_USER_TOKEN** → Your GitHub API token  
+- **GITHUB_USER_TOKEN** → Your GitHub API token
 - **PR_URL** → The pull request URL to review
 
 Ensure these values are correctly set in your Docker environment, Kubernetes job, or GitHub Actions workflow before running.

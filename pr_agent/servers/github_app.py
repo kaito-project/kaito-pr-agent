@@ -369,13 +369,13 @@ async def handle_new_issue(body: Dict[str, Any],
     issue = body.get("issue", {})
     if not issue:
         return {}
-    
+
     api_url = issue.get("url")
     if not api_url:
         return {}
-    
+
     log_context["issue_url"] = api_url
-    
+
     if action in get_settings().github_app.handle_issue_actions:
         apply_repo_settings(api_url)
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:

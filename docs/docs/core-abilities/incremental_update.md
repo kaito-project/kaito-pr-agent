@@ -29,5 +29,3 @@ Once the user clicks on the button:
 - Focus on what matters: See feedback on newest code first
 - Clearer organization: Comments on recent changes are clearly marked
 - Better workflow: Address feedback more systematically, starting with recent changes
-
-

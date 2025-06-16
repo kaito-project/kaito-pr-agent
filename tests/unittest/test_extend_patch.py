@@ -18,6 +18,7 @@ from pr_agent.algo.pr_processing import pr_generate_extended_diff
 from pr_agent.algo.token_handler import TokenHandler
 from pr_agent.algo.utils import load_large_diff
 from pr_agent.config_loader import get_settings
+
 get_settings(use_context=False).set("CONFIG.CLI_MODE", True)
 get_settings(use_context=False).config.allow_dynamic_context = False
 
@@ -190,8 +191,8 @@ class TestLoadLargeDiff:
                                 old content 2""")
 
         patch_expected="""\
---- 
-+++ 
+---
++++
 @@ -1,3 +1,3 @@
 -
                                  old content 1

@@ -4,11 +4,11 @@ name: Create Image Release
 # CREATE IMAGE RELEASE WORKFLOW
 # =============================================================================
 # This workflow creates a release for the project
-# 
+#
 # Triggers:
 # - New releases: Publishes versioned tags (e.g., 'v1.0.0')
 # - Manual trigger: For emergency/testing releases with version tagging
-# 
+#
 # Note: This is separate from CI testing (ci-build-and-test.yaml) and docker-release.yaml
 # =============================================================================
 
@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: write
       packages: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -141,7 +141,7 @@ jobs:
           echo "🔓 Making GHCR package publicly accessible..."
           # Extract repository name for GHCR package name
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          
+
           # Set package visibility to public
           # Note: This requires the package to exist first (which it will after the build step)
           gh api --method PATCH \
@@ -149,7 +149,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/user/packages/container/${REPO_NAME##*/}/visibility" \
             -f visibility='public' || echo "⚠️  Package may already be public or visibility change failed"
-          
+
           echo "✅ GHCR package visibility updated"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -169,4 +169,4 @@ jobs:
           echo "**Usage example**:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag_as_latest == 'true' && 'latest' || github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY 
+          echo '```' >> $GITHUB_STEP_SUMMARY

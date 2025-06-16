@@ -77,14 +77,14 @@ ___
     #### Answer:<span style="display:none;">5</span>
 
     Yes, you can customize review effort estimates using the `extra_instructions` configuration option (see [documentation](https://qodo-merge-docs.qodo.ai/tools/review/#configuration-options)).
-    
+
     Example mapping:
 
     - Effort 1: < 30 minutes review time
     - Effort 2: 30-60 minutes review time
     - Effort 3: 60-90 minutes review time
     - ...
-    
+
     Note: The effort levels (1-5) are primarily meant for _comparative_ purposes, helping teams prioritize reviewing smaller PRs first. The actual review duration may vary, as the focus is on providing consistent relative effort estimates.
 
 ___

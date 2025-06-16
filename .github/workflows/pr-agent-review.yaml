@@ -1,5 +1,5 @@
 # =============================================================================
-# PRODUCTION PR REVIEW WORKFLOW  
+# PRODUCTION PR REVIEW WORKFLOW
 # =============================================================================
 # This workflow uses a STABLE RELEASED version of PR-Agent to automatically
 # review PRs opened against this repository using the Kaito backend.
@@ -71,7 +71,7 @@ jobs:
       run: |
         echo "🔍 Checking Kaito backend health from self-hosted runner..."
         echo "Backend URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
-        
+
         if curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null; then
           echo "✅ Kaito backend is accessible and responding"
           echo "Available models:"
@@ -86,10 +86,10 @@ jobs:
       id: version
       run: |
         echo "🔍 Determining PR-Agent version strategy..."
-        
+
         # Check if we have any releases
         LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
-        
+
         if [[ -n "$LATEST_RELEASE" ]]; then
           # Use stable GHCR image
           echo "✅ Found latest release: $LATEST_RELEASE"
@@ -154,35 +154,35 @@ jobs:
         CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
         CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
         CONFIG.AI_TIMEOUT: "600"
-        
+
         # GitHub configuration
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
-        
+
         # Kaito endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
-        
+
         # GitHub Action configuration (critical for event handling)
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
         GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
         GITHUB_ACTION_CONFIG.PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
-        
+
         # PR Description settings (key settings from .secrets.toml)
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
         PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
         PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
-        
+
         # PR Reviewer settings
         PR_REVIEWER.PERSISTENT_COMMENT: "true"
         PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
-        
+
         # PR Code Suggestions settings (prevent duplicate comments)
         PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT: "true"
         PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
-        
+
         # Output configuration
         CONFIG.PUBLISH_OUTPUT: "true"
 
@@ -196,35 +196,35 @@ jobs:
         CONFIG.CUSTOM_MODEL_MAX_TOKENS: "32768"
         CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
         CONFIG.AI_TIMEOUT: "600"
-        
+
         # GitHub configuration
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
-        
+
         # Kaito endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
-        
+
         # GitHub Action configuration (critical for event handling)
         GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
         GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
         GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "true"
         GITHUB_ACTION_CONFIG.PR_ACTIONS: "opened,reopened,ready_for_review,synchronize"
-        
+
         # PR Description settings (key settings from .secrets.toml)
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT: "true"
         PR_DESCRIPTION.PUBLISH_DESCRIPTION_AS_COMMENT_PERSISTENT: "true"
         PR_DESCRIPTION.GENERATE_AI_TITLE: "true"
         PR_DESCRIPTION.FINAL_UPDATE_MESSAGE: "false"
-        
+
         # PR Reviewer settings
         PR_REVIEWER.PERSISTENT_COMMENT: "true"
         PR_REVIEWER.FINAL_UPDATE_MESSAGE: "false"
-        
+
         # PR Code Suggestions settings (prevent duplicate comments)
         PR_CODE_SUGGESTIONS.PERSISTENT_COMMENT: "true"
         PR_CODE_SUGGESTIONS.PUBLISH_OUTPUT_NO_SUGGESTIONS: "false"
-        
+
         # Output configuration
         CONFIG.PUBLISH_OUTPUT: "true"
 
@@ -232,7 +232,7 @@ jobs:
       if: always()
       run: |
         echo "🔍 Checking PR-Agent results..."
-        
+
         # Determine which step ran and its outcome
         if [[ "${{ steps.version.outputs.strategy }}" == "ghcr" ]]; then
           STEP_OUTCOME="${{ steps.pragent_ghcr.outcome }}"
@@ -241,10 +241,10 @@ jobs:
           STEP_OUTCOME="${{ steps.pragent_main.outcome }}"
           STRATEGY="main branch (development)"
         fi
-        
+
         echo "Strategy used: $STRATEGY"
         echo "Step outcome: $STEP_OUTCOME"
-        
+
         if [[ "$STEP_OUTCOME" == "success" ]]; then
           echo "✅ PR Review completed successfully!"
           echo "Check the PR for review comments and description updates."

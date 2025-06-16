@@ -20,7 +20,8 @@ from jinja2 import Environment, StrictUndefined
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.git_patch_processing import (
-    decouple_and_convert_to_hunks_with_lines_numbers, extract_hunk_lines_from_patch)
+    decouple_and_convert_to_hunks_with_lines_numbers,
+    extract_hunk_lines_from_patch)
 from pr_agent.algo.pr_processing import get_pr_diff, retry_with_fallback_models
 from pr_agent.algo.token_handler import TokenHandler
 from pr_agent.algo.utils import ModelType
@@ -30,6 +31,7 @@ from pr_agent.git_providers.git_provider import get_main_pr_language
 from pr_agent.git_providers.github_provider import GithubProvider
 from pr_agent.log import get_logger
 from pr_agent.servers.help import HelpMessage
+
 
 class PR_LineQuestions:
     def __init__(self, pr_url: str, args=None, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
@@ -48,7 +50,7 @@ class PR_LineQuestions:
             "question": self.question_str,
             "full_hunk": "",
             "selected_lines": "",
-            "conversation_history": "",  
+            "conversation_history": "",
         }
         self.token_handler = TokenHandler(self.git_provider.pr,
                                           self.vars,
@@ -112,26 +114,26 @@ class PR_LineQuestions:
                 self.git_provider.publish_comment(model_answer_sanitized)
 
         return ""
-        
+
     def _load_conversation_history(self) -> str:
         """Generate conversation history from the code review thread
-        
+
         Returns:
             str: The formatted conversation history
         """
         comment_id = get_settings().get('comment_id', '')
         file_path = get_settings().get('file_name', '')
         line_number = get_settings().get('line_end', '')
-        
+
         # early return if any required parameter is missing
         if not all([comment_id, file_path, line_number]):
             get_logger().error("Missing required parameters for conversation history")
             return ""
-        
+
         try:
             # retrieve thread comments
             thread_comments = self.git_provider.get_review_thread_comments(comment_id)
-            
+
             # filter and prepare comments
             filtered_comments = []
             for comment in thread_comments:
@@ -140,23 +142,23 @@ class PR_LineQuestions:
                 # skip empty comments, current comment(will be added as a question at prompt)
                 if not body or not body.strip() or comment_id == comment.id:
                     continue
-                
+
                 user = comment.user
                 author = user.login if hasattr(user, 'login') else 'Unknown'
                 filtered_comments.append((author, body))
-            
+
             # transform conversation history to string using the same pattern as get_commit_messages
             if filtered_comments:
                 comment_count = len(filtered_comments)
                 get_logger().info(f"Loaded {comment_count} comments from the code review thread")
-                
+
                 # Format as numbered list, similar to get_commit_messages
-                conversation_history_str = "\n".join([f"{i + 1}. {author}: {body}" 
+                conversation_history_str = "\n".join([f"{i + 1}. {author}: {body}"
                                                    for i, (author, body) in enumerate(filtered_comments)])
                 return conversation_history_str
-            
+
             return ""
-        
+
         except Exception as e:
             get_logger().error(f"Error processing conversation history, error: {e}")
             return ""
