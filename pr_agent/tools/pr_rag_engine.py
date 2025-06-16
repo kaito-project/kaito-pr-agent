@@ -1,11 +1,12 @@
+import base64
 import os
+
+from pr_agent.algo.types import EDIT_TYPE
 from pr_agent.clients.kaito_rag_client import KAITORagClient
 from pr_agent.git_providers import (get_git_provider,
                                     get_git_provider_with_context)
-from pr_agent.algo.types import EDIT_TYPE
 
 from ..log import get_logger
-import base64
 
 
 class PRRagEngine:
@@ -35,7 +36,7 @@ class PRRagEngine:
         branch_name = git_provider.get_pr_branch().replace('/', '_')
         index_name = f"{repo_name}_{branch_name}"
         return index_name
-    
+
     def _get_pr_base_index_name(self, git_provider):
         if not git_provider:
             raise ValueError("Git provider not found for the given PR URL.")
@@ -45,7 +46,7 @@ class PRRagEngine:
         branch_name = git_provider.pr.base.ref.replace('/', '_')
         index_name = f"{repo_name}_{branch_name}"
         return index_name
-    
+
     def _get_repo_default_branch_index_name(self, git_provider):
         if not git_provider:
             raise ValueError("Git provider not found for the given PR URL.")
@@ -99,13 +100,13 @@ class PRRagEngine:
                 curr_doc = existing_docs[file_info.old_filename]
             elif file_info.filename in existing_docs:
                 curr_doc = existing_docs[file_info.filename]
-            
+
             if not curr_doc:
                 if file_info.edit_type == EDIT_TYPE.DELETED:
                     # If the file is deleted and we don't have a current document, skip it
                     get_logger().info(f"skipping deleted file with no exisitng index document {file_info.filename}.")
                     continue
-                
+
 
             if file_info.edit_type == EDIT_TYPE.ADDED or not curr_doc:
                 # Added files will be created
@@ -120,7 +121,7 @@ class PRRagEngine:
                 if language and language in self.valid_languages:
                     doc["metadata"]["language"] = language
                     doc["metadata"]["split_type"] = "code"
-                
+
                 create_docs.append(doc)
             elif file_info.edit_type == EDIT_TYPE.DELETED:
                 # Deleted files will be marked for deletion
@@ -165,7 +166,7 @@ class PRRagEngine:
         if not default_branch:
             get_logger().error(f"Default branch {git_provider.repo_obj.default_branch} not found.")
             raise ValueError("Default branch not found for the given PR URL.")
-        
+
         base_branch_tree = git_provider.repo_obj.get_git_tree(default_branch.commit.sha, recursive=True)
         batch_docs = []
         for file_info in base_branch_tree.tree:
@@ -214,7 +215,7 @@ class PRRagEngine:
                 return self.create_base_branch_index(pr_url)
 
             create_docs, update_docs, deleted_docs = self._get_pr_docs_for_rag(git_provider)
-            
+
             if not deleted_docs and not update_docs and not create_docs:
                 get_logger().info(f"No changes detected for PR URL {pr_url}.")
                 return
@@ -264,7 +265,7 @@ class PRRagEngine:
             get_logger().info(f"Creating new index {index_name} for PR URL {pr_url}.")
             self.rag_client.persist_index(base_index_name, path=f"/tmp/{base_index_name}")
             self.rag_client.load_index(index_name, path=f"/tmp/{base_index_name}", overwrite=True)
-            
+
             self.update_pr_index(pr_url)
 
         except Exception as e:
@@ -292,7 +293,7 @@ class PRRagEngine:
                 return self.create_new_pr_index(pr_url)
 
             create_docs, update_docs, deleted_docs = self._get_pr_docs_for_rag(git_provider)
-            
+
             if not deleted_docs and not update_docs and not create_docs:
                 get_logger().info(f"No changes detected for PR URL {pr_url}.")
                 return
@@ -313,7 +314,7 @@ class PRRagEngine:
         except Exception as e:
             get_logger().error(f"Error updating documents: {e}")
             raise e
-    
+
     def delete_pr_index(self, pr_url: str):
         """
         Deletes the RAG index for a given pull request (PR) URL.

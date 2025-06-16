@@ -71,7 +71,7 @@ def handle_line_comment(body: str, thread_id: int, provider: AzureDevopsProvider
     thread_context = provider.get_thread_context(thread_id)
     if not thread_context:
         return body
-    
+
     path = thread_context.file_path
     if thread_context.left_file_end or thread_context.left_file_start:
         start_line = thread_context.left_file_start.line
@@ -84,7 +84,7 @@ def handle_line_comment(body: str, thread_id: int, provider: AzureDevopsProvider
     else:
         get_logger().info("No line range found in thread context", artifact={"thread_context": thread_context})
         return body
-    
+
     question = body[5:].lstrip() # remove 4 chars: '/ask '
     return f"/ask_line --line_start={start_line} --line_end={end_line} --side={side} --file_name={path} --comment_id={thread_id} {question}"
 
@@ -93,7 +93,7 @@ def handle_line_comment(body: str, thread_id: int, provider: AzureDevopsProvider
 def authorize(credentials: HTTPBasicCredentials = Depends(security)):
     if WEBHOOK_USERNAME is None or WEBHOOK_PASSWORD is None:
         return
-    
+
     is_user_ok = secrets.compare_digest(credentials.username, WEBHOOK_USERNAME)
     is_pass_ok = secrets.compare_digest(credentials.password, WEBHOOK_PASSWORD)
     if not (is_user_ok and is_pass_ok):

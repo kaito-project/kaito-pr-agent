@@ -182,7 +182,7 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
     git clone https://github.com/kaito-project/kaito-pr-agent.git
     kubectl apply -f kaito-pr-agent/deploy/k8s/pr-agent-github-app-deployment.yaml
     ```
-    
+
     **Alternative hosting options:**
     - Serverless function (see [Deploy as a Lambda Function](#deploy-as-a-lambda-function))
     - Development/debugging with smee.io to forward webhooks to your local machine

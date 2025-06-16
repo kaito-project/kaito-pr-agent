@@ -13,15 +13,14 @@
 
 import difflib
 import re
-
-from packaging.version import parse as parse_version
+import shlex
+import subprocess
 from typing import Optional, Tuple
 from urllib.parse import quote_plus, urlparse
 
 from atlassian.bitbucket import Bitbucket
+from packaging.version import parse as parse_version
 from requests.exceptions import HTTPError
-import shlex
-import subprocess
 
 from ..algo.git_patch_processing import decode_if_bytes
 from ..algo.language_handler import is_valid_file

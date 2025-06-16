@@ -1,10 +1,12 @@
-from typing import Optional, Tuple, List, Dict
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
+
 import requests
-from pr_agent.git_providers.git_provider import GitProvider
-from pr_agent.config_loader import get_settings
-from pr_agent.log import get_logger
+
 from pr_agent.algo.types import EDIT_TYPE, FilePatchInfo
+from pr_agent.config_loader import get_settings
+from pr_agent.git_providers.git_provider import GitProvider
+from pr_agent.log import get_logger
 
 
 class GiteaProvider(GitProvider):

@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from base64 import b64decode, encode, b64encode
 import hashlib
+from base64 import b64decode, b64encode, encode
+
 
 class CliArgs:
     @staticmethod
@@ -45,5 +46,3 @@ class CliArgs:
             return True, ""
         except Exception as e:
             return False, str(e)
-
-
