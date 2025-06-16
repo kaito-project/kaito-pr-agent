@@ -19,13 +19,17 @@ We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate *
 
 Get started in minutes with GitHub integration:
 
+> **Prerequisites:** You'll need a [Kaito workspace](https://github.com/kaito-project/kaito) running with your preferred model.
+
 ### GitHub Action (Recommended)
 Easy setup, no infrastructure needed. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-action)**
 
 ### GitHub App (Advanced)
 More control, runs in your infrastructure. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-app)**
 
-> **Prerequisites:** You'll need a [Kaito workspace](https://github.com/kaito-project/kaito) running with your preferred model.
+**📚 Essential Kaito Documentation:**
+- **[Kaito Inference Workspaces](https://github.com/kaito-project/kaito#quick-start)** - Setup and configure inference workspaces
+- **[Kaito RAG Engine](https://github.com/kaito-project/kaito/blob/main/docs/RAG/README.md)** - RAG capabilities and configuration (v0.5.0+)
 
 > **Live Example:** The kaito-pr-agent GitHub App with Qwen2.5-Coder-32B model is actively reviewing all PRs in the [Kaito repository](https://github.com/Azure/kaito).
 
@@ -35,6 +39,13 @@ More control, runs in your infrastructure. **[Setup Guide →](docs/docs/install
 This diagram illustrates how the PR-Agent GitHub app works with Kaito.
 
 ![Architecture Diagram](kaito-pr-agent-diagram.png)
+
+**Key Components & Their Significance:**
+
+- **🔄 GitHub App** - Receives PR events, manages comments, and handles authentication
+- **🤖 PR-Agent Pod** - Orchestrates the analysis workflow and manages tool execution (`/review`, `/describe`, `/improve`)
+- **⚡ Kaito Workspace** - Provides scalable Kubernetes-native AI model serving with automatic GPU provisioning
+- **🧠 Kaito RAGEngine** - Enriches context by retrieving relevant code snippets and documentation from your codebase
 
 ---
 
