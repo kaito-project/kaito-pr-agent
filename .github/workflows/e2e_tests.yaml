@@ -79,8 +79,7 @@ jobs:
         with:
           app-id: ${{ secrets.E2E_GITHUB_APP_ID }}
           private-key: ${{ secrets.E2E_GITHUB_APP_PRIVATE_KEY }}
-          # Use the current repository context
-          repositories: ${{ github.repository }}
+          # Let the action auto-detect from context - simplest approach
 
       - name: Install E2E test dependencies
         run: |
