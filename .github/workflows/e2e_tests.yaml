@@ -101,7 +101,7 @@ jobs:
           CONFIG.DUPLICATE_PROMPT_EXAMPLES: "true"
           CONFIG.AI_TIMEOUT: "600"
 
-          # Kaito endpoint
+          # KAITO endpoint
           OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
 
           # PR Description settings (for E2E testing)
@@ -149,17 +149,17 @@ jobs:
 
           if [ -z "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}" ]; then
             echo "❌ ERROR: KAITO_PR_REVIEWER_WORKSPACE_URL secret is not set"
-            echo "Please set the Kaito load balancer endpoint URL in repository secrets"
+            echo "Please set the KAITO load balancer endpoint URL in repository secrets"
             exit 1
           fi
 
-          echo "🔧 Verifying self-hosted runner access to Kaito backend..."
+          echo "🔧 Verifying self-hosted runner access to KAITO backend..."
           curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null || {
-            echo "❌ ERROR: Cannot access Kaito backend from self-hosted runner"
-            echo "Kaito URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
+            echo "❌ ERROR: Cannot access KAITO backend from self-hosted runner"
+            echo "KAITO URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
             exit 1
           }
-          echo "✅ Kaito backend is accessible from self-hosted runner"
+          echo "✅ KAITO backend is accessible from self-hosted runner"
 
           echo "🔍 Debugging GitHub App token permissions..."
           echo "App ID: ${{ secrets.E2E_GITHUB_APP_ID }}"
@@ -173,12 +173,12 @@ jobs:
 
           echo "🧪 Running E2E test with built Docker image..."
           echo "Image: ${{ steps.image_tag.outputs.image_tag }}"
-          echo "Backend: Kaito (${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }})"
+          echo "Backend: KAITO (${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }})"
           echo "Model: hosted_vllm/qwen2.5-coder-32b-instruct"
           echo ""
           echo "This test will:"
           echo "  1. Create a test PR in this repository"
-          echo "  2. Run the built PR-Agent image on that PR using Kaito backend"
+          echo "  2. Run the built PR-Agent image on that PR using KAITO backend"
           echo "  3. Validate that describe/review/improve tools work"
           echo "  4. Clean up the test PR"
           echo ""

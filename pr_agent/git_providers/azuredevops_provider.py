@@ -651,4 +651,3 @@ class AzureDevopsProvider(GitProvider):
         last = commits[0]
         url = self.azure_devops_client.normalized_url + "/" + self.workspace_slug + "/_git/" + self.repo_slug + "/commit/" + last.commit_id
         return url
-

@@ -1,17 +1,17 @@
-# Kaito PR-Agent
+# KAITO PR-Agent
 
 <div align="center">
 
-**AI-powered code review automation using Kaito as the backend**
+**AI-powered code review automation using KAITO as the backend**
 
-This is a fork of [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) modified for the Kaito project.
+This is a fork of [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) modified for the KAITO project.
 See [NOTICE](NOTICE) for attribution details.
 
 </div>
 
 ## Why We Forked PR-Agent
 
-We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate **Kaito RAGEngine** as the backend, improving PR-Agent's performance by gathering additional context from your codebase. This enhanced contextual understanding allows for more accurate code reviews, better suggestions, and smarter PR descriptions.
+We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate **KAITO RAGEngine** as the backend, improving PR-Agent's performance by gathering additional context from your codebase. This enhanced contextual understanding allows for more accurate code reviews, better suggestions, and smarter PR descriptions.
 
 ---
 
@@ -19,7 +19,7 @@ We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate *
 
 Get started in minutes with GitHub integration:
 
-> **Prerequisites:** You'll need a [Kaito workspace](https://github.com/kaito-project/kaito) running with your preferred model.
+> **Prerequisites:** You'll need a [KAITO inference workspace](https://github.com/kaito-project/kaito) running with your preferred model.
 
 ### GitHub Action (Recommended)
 Easy setup, no infrastructure needed. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-action)**
@@ -27,16 +27,16 @@ Easy setup, no infrastructure needed. **[Setup Guide →](docs/docs/installation
 ### GitHub App (Advanced)
 More control, runs in your infrastructure. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-app)**
 
-**📚 Essential Kaito Documentation:**
-- **[Kaito Inference Workspaces](https://github.com/kaito-project/kaito#quick-start)** - Setup and configure inference workspaces
-- **[Kaito RAG Engine](https://github.com/kaito-project/kaito/blob/main/docs/RAG/README.md)** - RAG capabilities and configuration (v0.5.0+)
+**📚 Essential KAITO Documentation:**
+- **[KAITO Inference Workspaces](https://github.com/kaito-project/kaito#quick-start)** - Setup and configure inference workspaces
+- **[KAITO RAG Engine](https://github.com/kaito-project/kaito/blob/main/docs/RAG/README.md)** - RAG capabilities and configuration (open-source release coming soon in v0.5.0)
 
-> **Live Example:** The kaito-pr-agent GitHub App with Qwen2.5-Coder-32B model is actively reviewing all PRs in the [Kaito repository](https://github.com/Azure/kaito).
+> **Live Example:** The kaito-pr-agent GitHub App with Qwen2.5-Coder-32B model is actively reviewing all PRs in the [KAITO repository](https://github.com/Azure/kaito).
 
 ---
 
 ### Architecture Diagram
-This diagram illustrates how the PR-Agent GitHub app works with Kaito.
+This diagram illustrates how the PR-Agent GitHub app works with KAITO.
 
 ![Architecture Diagram](kaito-pr-agent-diagram.png)
 
@@ -44,8 +44,8 @@ This diagram illustrates how the PR-Agent GitHub app works with Kaito.
 
 - **🔄 GitHub App** - Receives PR events, manages comments, and handles authentication
 - **🤖 PR-Agent Pod** - Orchestrates the analysis workflow and manages tool execution (`/review`, `/describe`, `/improve`)
-- **⚡ Kaito Workspace** - Provides scalable Kubernetes-native AI model serving with automatic GPU provisioning
-- **🧠 Kaito RAGEngine** - Enriches context by retrieving relevant code snippets and documentation from your codebase
+- **⚡ KAITO Workspace** - Provides scalable Kubernetes-native AI model serving with automatic GPU provisioning
+- **🧠 KAITO RAGEngine** - Enriches context by retrieving relevant code snippets and documentation from your codebase
 
 ---
 
@@ -75,7 +75,7 @@ Use the provided workflow in `.github/pr-review.yaml` to automate PR reviews.
 
 In all setups, replace the following placeholders with your actual values:
 
-- **OLLAMA_API_BASE** → Your Kaito workspace URL
+- **OLLAMA_API_BASE** → Your KAITO inference workspace URL
 - **GITHUB_USER_TOKEN** → Your GitHub API token
 - **PR_URL** → The pull request URL to review
 
@@ -91,8 +91,8 @@ Ensure these values are correctly set in your Docker environment, Kubernetes job
 ## Links
 
 - **Original Project**: [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent)
-- **Kaito Project**: [Azure/kaito](https://github.com/Azure/kaito)
-- **Documentation**: [Kaito Docs](https://github.com/Azure/kaito/tree/main/docs)
+- **KAITO Project**: [kaito-project/kaito](https://github.com/kaito-project/kaito)
+- **Documentation**: [KAITO Docs](https://github.com/kaito-project/kaito/tree/main/docs)
 - **Support**: Open an issue in this repository
 
 ## License
@@ -107,4 +107,4 @@ For detailed attribution information, see [NOTICE](NOTICE).
 
 ## Contact
 
-"Kaito devs" <kaito-dev@microsoft.com>
+"KAITO devs" <kaito-dev@microsoft.com>
