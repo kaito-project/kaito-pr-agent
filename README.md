@@ -19,7 +19,7 @@ We forked [qodo-ai/pr-agent](https://github.com/qodo-ai/pr-agent) to integrate *
 
 Get started in minutes with GitHub integration:
 
-> **Prerequisites:** You'll need a [KAITO workspace](https://github.com/kaito-project/kaito) running with your preferred model.
+> **Prerequisites:** You'll need a [KAITO inference workspace](https://github.com/kaito-project/kaito) running with your preferred model.
 
 ### GitHub Action (Recommended)
 Easy setup, no infrastructure needed. **[Setup Guide →](docs/docs/installation/github.md#run-as-a-github-action)**
@@ -29,7 +29,7 @@ More control, runs in your infrastructure. **[Setup Guide →](docs/docs/install
 
 **📚 Essential KAITO Documentation:**
 - **[KAITO Inference Workspaces](https://github.com/kaito-project/kaito#quick-start)** - Setup and configure inference workspaces
-- **[KAITO RAG Engine](https://github.com/kaito-project/kaito/blob/main/docs/RAG/README.md)** - RAG capabilities and configuration (v0.5.0+)
+- **[KAITO RAG Engine](https://github.com/kaito-project/kaito/blob/main/docs/RAG/README.md)** - RAG capabilities and configuration (open-source release coming soon in v0.5.0)
 
 > **Live Example:** The kaito-pr-agent GitHub App with Qwen2.5-Coder-32B model is actively reviewing all PRs in the [KAITO repository](https://github.com/Azure/kaito).
 
@@ -75,7 +75,7 @@ Use the provided workflow in `.github/pr-review.yaml` to automate PR reviews.
 
 In all setups, replace the following placeholders with your actual values:
 
-- **OLLAMA_API_BASE** → Your KAITO workspace URL
+- **OLLAMA_API_BASE** → Your KAITO inference workspace URL
 - **GITHUB_USER_TOKEN** → Your GitHub API token
 - **PR_URL** → The pull request URL to review
 

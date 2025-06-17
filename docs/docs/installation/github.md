@@ -35,7 +35,7 @@ Name = KAITO_WORKSPACE_URL
 Secret = http://<LOAD_BALANCER_IP>/v1
 ```
 
-Replace `<LOAD_BALANCER_IP>` with your KAITO workspace's public load balancer IP. This URL should point to your exposed KAITO backend endpoint.
+Replace `<LOAD_BALANCER_IP>` with your KAITO inference workspace's public load balancer IP. This URL should point to your exposed KAITO backend endpoint.
 
 The GITHUB_TOKEN secret is automatically created by GitHub.
 
