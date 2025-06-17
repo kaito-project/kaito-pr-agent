@@ -35,7 +35,7 @@ Name = KAITO_WORKSPACE_URL
 Secret = http://<LOAD_BALANCER_IP>/v1
 ```
 
-Replace `<LOAD_BALANCER_IP>` with your Kaito workspace's public load balancer IP. This URL should point to your exposed Kaito backend endpoint.
+Replace `<LOAD_BALANCER_IP>` with your KAITO workspace's public load balancer IP. This URL should point to your exposed KAITO backend endpoint.
 
 The GITHUB_TOKEN secret is automatically created by GitHub.
 
@@ -96,7 +96,7 @@ See detailed usage instructions in the [USAGE GUIDE](https://qodo-merge-docs.qod
 
 Allowing you to automate the review process on your private or public repositories.
 
-**Deployment Note**: When running as a GitHub App, PR-Agent typically runs as a pod within your Kubernetes cluster. This allows direct access to your Kaito backend via ClusterIP (no load balancer needed for backend connectivity). However, you'll need a load balancer or ingress to expose the PR-Agent webhook endpoint so GitHub can send events to it.
+**Deployment Note**: When running as a GitHub App, PR-Agent typically runs as a pod within your Kubernetes cluster. This allows direct access to your KAITO backend via ClusterIP (no load balancer needed for backend connectivity). However, you'll need a load balancer or ingress to expose the PR-Agent webhook endpoint so GitHub can send events to it.
 
 1) Create a GitHub App from the [Github Developer Portal](https://docs.github.com/en/developers/apps/creating-a-github-app).
 
@@ -134,12 +134,12 @@ cp pr_agent/settings/.secrets_template.toml pr_agent/settings/.secrets.toml
 # Edit .secrets.toml file
 ```
 
-- Your Kaito backend URL (use ClusterIP if running in-cluster, e.g., `http://workspace-qwen-2-5-coder-32b-instruct.default.svc/v1`)
+- Your KAITO backend URL (use ClusterIP if running in-cluster, e.g., `http://workspace-qwen-2-5-coder-32b-instruct.default.svc/v1`)
 - Copy your app's private key to the private_key field.
 - Copy your app's ID to the app_id field.
 - Copy your app's webhook secret to the webhook_secret field.
 - Set deployment_type to 'app' in [configuration.toml](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml)
-- Set your Kaito model: `CONFIG.MODEL = "hosted_vllm/your-kaito-model"` (e.g., `"hosted_vllm/qwen2.5-coder-32b-instruct"`)
+- Set your KAITO model: `CONFIG.MODEL = "hosted_vllm/your-kaito-model"` (e.g., `"hosted_vllm/qwen2.5-coder-32b-instruct"`)
 
     > The .secrets.toml file is not copied to the Docker image by default, and is only used for local development.
     > If you want to use the .secrets.toml file in your Docker image, you can add remove it from the .dockerignore file.

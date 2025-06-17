@@ -2,11 +2,11 @@
 # PRODUCTION PR REVIEW WORKFLOW
 # =============================================================================
 # This workflow uses a STABLE RELEASED version of PR-Agent to automatically
-# review PRs opened against this repository using the Kaito backend.
+# review PRs opened against this repository using the KAITO backend.
 #
 # Purpose: Provide stable, reliable PR reviews for contributors
 # Code Used: Latest stable release from GHCR (falls back to main if no release)
-# Backend: Kaito load balancer endpoint (via self-hosted runner)
+# Backend: KAITO load balancer endpoint (via self-hosted runner)
 # =============================================================================
 
 name: PR-Agent Review (Production)
@@ -67,17 +67,17 @@ jobs:
         fi
         echo ""
 
-    - name: Check Kaito Backend Health
+    - name: Check KAITO Backend Health
       run: |
-        echo "🔍 Checking Kaito backend health from self-hosted runner..."
+        echo "🔍 Checking KAITO backend health from self-hosted runner..."
         echo "Backend URL: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}"
 
         if curl -f -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" > /dev/null; then
-          echo "✅ Kaito backend is accessible and responding"
+          echo "✅ KAITO backend is accessible and responding"
           echo "Available models:"
           curl -s "${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}/models" | head -10
         else
-          echo "❌ ERROR: Cannot access Kaito backend from self-hosted runner"
+          echo "❌ ERROR: Cannot access KAITO backend from self-hosted runner"
           echo "This will cause PR review to fail"
           exit 1
         fi
@@ -160,7 +160,7 @@ jobs:
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
 
-        # Kaito endpoint
+        # KAITO endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
 
         # GitHub Action configuration (critical for event handling)
@@ -202,7 +202,7 @@ jobs:
         GITHUB.USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB.DEPLOYMENT_TYPE: "user"
 
-        # Kaito endpoint
+        # KAITO endpoint
         OLLAMA.API_BASE: ${{ secrets.KAITO_PR_REVIEWER_WORKSPACE_URL }}
 
         # GitHub Action configuration (critical for event handling)
@@ -251,7 +251,7 @@ jobs:
         else
           echo "❌ PR Review failed - check logs above"
           echo "Common issues:"
-          echo "  - Kaito backend connectivity"
+          echo "  - KAITO backend connectivity"
           echo "  - GitHub token permissions"
           echo "  - Event type not handled by PR-Agent"
           if [[ "${{ steps.version.outputs.strategy }}" == "ghcr" ]]; then
