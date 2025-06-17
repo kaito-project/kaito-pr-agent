@@ -30,6 +30,7 @@ jobs:
     # This checks: PR title doesn't contain [E2E Test], branch name doesn't start with e2e-test-, and PR title doesn't contain e2e-test-
     if: ${{ !contains(github.event.pull_request.title, '[E2E Test]') && !startsWith(github.event.pull_request.head.ref, 'e2e-test-') && !contains(github.event.pull_request.title, 'e2e-test-') }}
     runs-on: [ "self-hosted", "hostname:kaito-e2e-github-runner-2" ]
+    environment: e2e-tests
     permissions:
       contents: read
       pull-requests: write
