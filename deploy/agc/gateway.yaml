@@ -1,3 +1,5 @@
+# Follow along first here: https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/quickstart-deploy-application-gateway-for-containers-alb-controller?tabs=install-helm-windows
+# Then here to get things setup: https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/quickstart-create-application-gateway-for-containers-managed-by-alb-controller?tabs=new-subnet-aks-vnet
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:

@@ -1,0 +1,24 @@
+# this will be used to create an internal load balancer that will be used within the github e2e pipelines
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    App: qwen-2-5-coder
+  name: workspace-qwen-2-5-coder-32b-instruct-lb
+spec:
+  ports:
+  - name: http
+    nodePort: 30530
+    port: 80
+    protocol: TCP
+    targetPort: 5000
+  - name: torch
+    nodePort: 31049
+    port: 29500
+    protocol: TCP
+    targetPort: 29500
+  selector:
+    kaito.sh/workspace: workspace-qwen-2-5-coder-32b-instruct
+  type: LoadBalancer
