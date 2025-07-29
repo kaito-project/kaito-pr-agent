@@ -26,6 +26,7 @@ from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
 
 from pr_agent.agent.pr_agent import PRAgent
+from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.utils import update_settings_from_args
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.git_providers import (get_git_provider,
@@ -36,7 +37,7 @@ from pr_agent.identity_providers import get_identity_provider
 from pr_agent.identity_providers.identity_provider import Eligibility
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.utils import DefaultDictWithTimeout, verify_signature
-from pr_agent.tools.pr_rag_engine import PRRagEngine
+from pr_agent.tools.pr_rag_engine import PRRAGIndexManager, PRRAGEngine
 
 setup_logger(fmt=LoggingFormat.JSON, level=get_settings().get("CONFIG.LOG_LEVEL", "DEBUG"))
 base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -48,7 +49,7 @@ else:
     build_number = "unknown"
 router = APIRouter()
 use_rag_engine = get_settings().get("KAITORAGENGINE.USE_RAG_ENGINE", False)
-ragEngine = PRRagEngine(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
+ragIndexManager = PRRAGIndexManager(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
 
 @router.post("/api/v1/github_webhooks")
 async def handle_github_webhooks(background_tasks: BackgroundTasks, request: Request, response: Response):
@@ -147,6 +148,8 @@ async def handle_comments_on_pr(body: Dict[str, Any],
     with get_logger().contextualize(**log_context):
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Processing comment on PR {api_url=}, comment_body={comment_body}")
+            if use_rag_engine:
+                agent.ai_handler.pr_rag_engine = PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url)
             await agent.handle_request(api_url, comment_body,
                         notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
         else:
@@ -171,7 +174,7 @@ async def handle_new_pr_opened(body: Dict[str, Any],
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             if use_rag_engine:
                 try:
-                    ragEngine.create_new_pr_index(api_url)
+                    ragIndexManager.create_new_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("pr_commands", agent, body, api_url, log_context)
@@ -235,7 +238,7 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             get_logger().info(f"Performing incremental review for {api_url=} because of {event=} and {action=}")
             if use_rag_engine:
                 try:
-                    ragEngine.update_pr_index(api_url)
+                    ragIndexManager.update_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to update PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("push_commands", agent, body, api_url, log_context)
@@ -260,9 +263,9 @@ def handle_closed_pr(body, event, action, log_context):
     if use_rag_engine:
         try:
             # handle merging of head changes into base branch index
-            ragEngine.update_base_branch_index(api_url)
+            ragIndexManager.update_base_branch_index(api_url)
             # clenup the index created for the head branch of the PR
-            ragEngine.delete_pr_index(api_url)
+            ragIndexManager.delete_pr_index(api_url)
         except Exception as e:
             get_logger().error(f"Failed to handle pr merged rag logic for {api_url=}: {e}")
 
@@ -373,6 +376,9 @@ async def handle_new_issue(body: Dict[str, Any],
     api_url = issue.get("url")
     if not api_url:
         return {}
+    
+    if use_rag_engine:
+        agent.ai_handler.pr_rag_engine = PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url)
 
     log_context["issue_url"] = api_url
 
@@ -397,7 +403,7 @@ async def handle_request(body: Dict[str, Any], event: str):
     if not action:
         get_logger().debug(f"No action found in request body, exiting handle_request")
         return {}
-    agent = PRAgent()
+    agent = PRAgent(ai_handler=LiteLLMAIHandler(pr_rag_engine=PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url) if use_rag_engine else None))
     log_context, sender, sender_id, sender_type = get_log_context(body, event, action, build_number)
 
     # logic to ignore PRs opened by bot, PRs with specific titles, labels, source branches, or target branches

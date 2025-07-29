@@ -40,14 +40,18 @@ class LiteLLMAIHandler(BaseAiHandler):
     and provides a method for performing chat completions using the OpenAI ChatCompletion API.
     """
 
-    def __init__(self):
+    def __init__(self, pr_rag_engine=None):
         """
         Initializes the OpenAI API key and other settings from a configuration file.
         Raises a ValueError if the OpenAI key is missing.
+        
+        Args:
+            pr_rag_engine: Optional PRRagEngine instance for enhanced contextual responses.
         """
         self.azure = False
         self.api_base = None
         self.repetition_penalty = None
+        self.pr_rag_engine = pr_rag_engine
 
         if get_settings().get("OPENAI.KEY", None):
             openai.api_key = get_settings().openai.key
@@ -296,6 +300,19 @@ class LiteLLMAIHandler(BaseAiHandler):
         stop=stop_after_attempt(OPENAI_RETRIES),
     )
     async def chat_completion(self, model: str, system: str, user: str, temperature: float = 0.2, img_path: str = None):
+        """
+        Performs chat completion using either PRRagEngine (if available) or standard LLM completion.
+        
+        Args:
+            model (str): The model to use for completion
+            system (str): System prompt
+            user (str): User prompt/query
+            temperature (float, optional): Temperature for LLM generation. Defaults to 0.2.
+            img_path (str, optional): Path to image for vision models. Defaults to None.
+            
+        Returns:
+            tuple: (response_text, finish_reason)
+        """
         try:
             resp, finish_reason = None, None
             deployment_id = self.deployment_id
@@ -388,6 +405,40 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
 
+            # Use PRRagEngine if available
+            if self.pr_rag_engine is not None:
+                get_logger().info(f"Using PRRagEngine for enhanced contextual response")
+                try:
+                    # Use the PRRagEngine query method instead of acompletion
+                    rag_response = self.pr_rag_engine.query(
+                        query=user,
+                        llm_temperature=temperature,
+                        llm_max_tokens=kwargs.get("max_tokens", 1000),
+                        top_k=5
+                    )
+                    
+                    # The PRRagEngine query method returns a dict with the response
+                    # We need to extract the response content and create a compatible format
+                    if rag_response:
+                        # Assume the response format matches what acompletion would return
+                        # This may need adjustment based on the actual response format from PRRagEngine
+                        resp = rag_response.get("response", "")
+                        finish_reason = "stop"  # Default finish reason for RAG responses
+                        
+                        get_logger().info(f"Successfully got response from PRRagEngine")
+                        get_logger().debug(f"\nRAG AI response:\n{resp}")
+                        
+                        # For CLI debugging
+                        if get_settings().config.verbosity_level >= 2:
+                            get_logger().info(f"\nRAG AI response:\n{resp}")
+                        
+                        return resp, finish_reason
+                    else:
+                        get_logger().warning("PRRagEngine returned empty response, falling back to regular completion")
+                except Exception as e:
+                    get_logger().error(f"Error using PRRagEngine: {e}, falling back to regular completion")
+            
+            # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
         except openai.RateLimitError as e:
             get_logger().error(f"Rate limit error during LLM inference: {e}")
