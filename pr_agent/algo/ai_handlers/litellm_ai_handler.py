@@ -405,39 +405,10 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
 
-            # Use PRRagEngine if available
+            # If PRRagEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
             if self.pr_rag_engine is not None:
-                get_logger().info(f"Using PRRagEngine for enhanced contextual response")
-                try:
-                    # Use the PRRagEngine query method instead of acompletion
-                    rag_response = self.pr_rag_engine.query(
-                        query=user,
-                        llm_temperature=temperature,
-                        llm_max_tokens=kwargs.get("max_tokens", 1000),
-                        top_k=5
-                    )
-                    
-                    # The PRRagEngine query method returns a dict with the response
-                    # We need to extract the response content and create a compatible format
-                    if rag_response:
-                        # Assume the response format matches what acompletion would return
-                        # This may need adjustment based on the actual response format from PRRagEngine
-                        resp = rag_response.get("response", "")
-                        finish_reason = "stop"  # Default finish reason for RAG responses
-                        
-                        get_logger().info(f"Successfully got response from PRRagEngine")
-                        get_logger().debug(f"\nRAG AI response:\n{resp}")
-                        
-                        # For CLI debugging
-                        if get_settings().config.verbosity_level >= 2:
-                            get_logger().info(f"\nRAG AI response:\n{resp}")
-                        
-                        return resp, finish_reason
-                    else:
-                        get_logger().warning("PRRagEngine returned empty response, falling back to regular completion")
-                except Exception as e:
-                    get_logger().error(f"Error using PRRagEngine: {e}, falling back to regular completion")
-            
+                kwargs["index_name"] = self.pr_rag_engine.get_pr_head_index_name()
+
             # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
         except openai.RateLimitError as e:
