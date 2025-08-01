@@ -369,4 +369,4 @@ pr_commands = [
 
 [kaitoragengine]
 use_rag_engine=false
-rag_engine_url="http://10.0.241.136"
+rag_engine_url=""

@@ -381,9 +381,6 @@ async def handle_new_issue(body: Dict[str, Any],
     api_url = issue.get("url")
     if not api_url:
         return {}
-    
-    if use_rag_engine:
-        agent.ai_handler.pr_rag_engine = PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url)
 
     log_context["issue_url"] = api_url
 
