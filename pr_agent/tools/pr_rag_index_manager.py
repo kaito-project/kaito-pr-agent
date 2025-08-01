@@ -216,12 +216,20 @@ class PRRAGIndexManager:
         for file_info in base_branch_tree.tree:
             if file_info.type == "blob":
                 # Might want to check file size / or other attributes here for filtering
-                doc = {
-                    "text": base64.b64decode(git_provider.repo_obj.get_git_blob(file_info.sha).content).decode(),
-                    "metadata": {
-                        "file_name": file_info.path,
+                doc = {}
+                try:
+                    file_content = base64.b64decode(git_provider.repo_obj.get_git_blob(file_info.sha).content).decode()
+                    doc = {
+                        "text": file_content,
+                        "metadata": {
+                            "file_name": file_info.path,
+                        }
                     }
-                }
+                except Exception as e:
+                    get_logger().error(f"Error decoding file content for {file_info.path}: {e}")
+                    continue
+
+                get_logger().info(f"Indexing document {file_info.path} in {index_name} with content {doc}.")
                 language = self.file_extension_to_language(file_info.path)
                 if language and language in self.valid_languages:
                     doc["metadata"]["language"] = language
@@ -240,6 +248,7 @@ class PRRAGIndexManager:
             except Exception as e:
                 get_logger().error(f"Error indexing documents: {e}")
                 raise e
+        get_logger().info(f"Base branch index {index_name} created successfully for PR URL {pr_url}.")
 
     def update_base_branch_index(self, pr_url: str):
         """
@@ -254,7 +263,7 @@ class PRRAGIndexManager:
         try:
             git_provider = self._get_git_provider(pr_url)
             base_index_name = self._get_pr_base_index_name(git_provider)
-            git_provider.p
+
             if not self._does_index_exist(base_index_name):
                 return self.create_base_branch_index(pr_url)
 
