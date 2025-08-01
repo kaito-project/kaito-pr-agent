@@ -5,6 +5,7 @@ import pytest
 
 from pr_agent.algo.types import EDIT_TYPE
 from pr_agent.tools.pr_rag_engine import PRRAGEngine
+from pr_agent.tools.pr_rag_index_manager import PRRAGIndexManager
 
 
 def test_documents():
@@ -70,7 +71,7 @@ def mock_git_provider():
     return provider
 
 def test_create_new_pr_index_with_diff_files(mock_rag_client, mock_git_provider):
-    engine = PRRAGEngine("http://fake-url")
+    engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
     # Patch index_name creation
@@ -90,7 +91,7 @@ def test_create_new_pr_index_with_diff_files(mock_rag_client, mock_git_provider)
         assert args[1][0]["metadata"]["split_type"] == "code"
 
 def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
-    engine = PRRAGEngine("http://fake-url")
+    engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
     mock_git_provider.get_diff_files.return_value = [
@@ -114,14 +115,14 @@ def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
 
     # Patch index name
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.update_pr_index("http://pr-url")
+        engine.update_pr_index(pr_url="http://pr-url")
         mock_rag_client.index_documents.assert_called_once()
         mock_rag_client.update_documents.assert_called_once()
         mock_rag_client.delete_documents.assert_called_once()
 
 def test_create_new_base_index(mock_rag_client, mock_git_provider):
     mock_rag_client.list_indexes.return_value = []
-    engine = PRRAGEngine("http://fake-url")
+    engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
         engine.create_base_branch_index("http://pr-url")
@@ -135,7 +136,7 @@ def test_create_new_base_index(mock_rag_client, mock_git_provider):
         assert args[1][0]["metadata"]["split_type"] == "code"
 
 def test_delete_pr_index(mock_rag_client, mock_git_provider):
-    engine = PRRAGEngine("http://fake-url")
+    engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
