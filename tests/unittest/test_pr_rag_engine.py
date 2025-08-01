@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pr_agent.algo.types import EDIT_TYPE
-from pr_agent.tools.pr_rag_engine import PRRAGEngine
 from pr_agent.tools.pr_rag_index_manager import PRRAGIndexManager
 
 
