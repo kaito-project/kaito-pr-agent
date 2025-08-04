@@ -69,13 +69,14 @@ def mock_git_provider():
     provider.get_pr_file_content.return_value = "print('hello world')"
     return provider
 
-def test_create_new_pr_index_with_diff_files(mock_rag_client, mock_git_provider):
+@pytest.mark.asyncio
+async def test_create_new_pr_index_with_diff_files(mock_rag_client, mock_git_provider):
     engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
     # Patch index_name creation
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.create_new_pr_index("http://pr-url")
+        await engine.create_new_pr_index("http://pr-url")
         mock_rag_client.persist_index.assert_called_once()
         mock_rag_client.load_index.assert_called_once()
         mock_rag_client.list_documents.assert_called_once()
@@ -89,7 +90,8 @@ def test_create_new_pr_index_with_diff_files(mock_rag_client, mock_git_provider)
         assert args[1][0]["metadata"]["language"] == "python"
         assert args[1][0]["metadata"]["split_type"] == "code"
 
-def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
+@pytest.mark.asyncio
+async def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
     engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
@@ -114,17 +116,18 @@ def test_update_index_add_modify_delete(mock_rag_client, mock_git_provider):
 
     # Patch index name
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.update_pr_index(pr_url="http://pr-url")
+        await engine.update_pr_index(pr_url="http://pr-url")
         mock_rag_client.index_documents.assert_called_once()
         mock_rag_client.update_documents.assert_called_once()
         mock_rag_client.delete_documents.assert_called_once()
 
-def test_create_new_base_index(mock_rag_client, mock_git_provider):
+@pytest.mark.asyncio
+async def test_create_new_base_index(mock_rag_client, mock_git_provider):
     mock_rag_client.list_indexes.return_value = []
     engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.create_base_branch_index("http://pr-url")
+        await engine.create_base_branch_index("http://pr-url")
         mock_rag_client.list_indexes.assert_called_once()
         mock_rag_client.index_documents.assert_called_once()
         args, kwargs = mock_rag_client.index_documents.call_args
@@ -134,12 +137,13 @@ def test_create_new_base_index(mock_rag_client, mock_git_provider):
         assert args[1][0]["metadata"]["language"] == "python"
         assert args[1][0]["metadata"]["split_type"] == "code"
 
-def test_delete_pr_index(mock_rag_client, mock_git_provider):
+@pytest.mark.asyncio
+async def test_delete_pr_index(mock_rag_client, mock_git_provider):
     engine = PRRAGIndexManager("http://fake-url")
     engine.rag_client = mock_rag_client
 
     with patch.object(engine, '_get_git_provider', return_value=mock_git_provider):
-        engine.delete_pr_index("http://pr-url")
+        await engine.delete_pr_index("http://pr-url")
         mock_rag_client.list_indexes.assert_called_once()
         mock_rag_client.delete_index.assert_called_once()
         args, kwargs = mock_rag_client.delete_index.call_args

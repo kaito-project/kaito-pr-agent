@@ -1,6 +1,6 @@
 import base64
 import os
-
+import asyncio
 from pr_agent.algo.types import EDIT_TYPE
 from pr_agent.clients.kaito_rag_client import KAITORagClient
 from pr_agent.git_providers import (get_git_provider,
@@ -16,8 +16,10 @@ class PRRAGIndexManager:
     '''
     def __init__(self, base_url: str):
         self.rag_client = KAITORagClient(base_url)
+        self.lock = asyncio.Lock()
         # these are the languages that are supported by tree sitter
-        self.valid_languages = ['bash', 'c', 'c_sharp','commonlisp', 'cpp', 'css', 'dockerfile', 'dot', 'elisp', 'elixir', 'elm', 'embedded_template', 'erlang', 'fixed_form_fortran', 'fortran', 'go', 'gomod', 'hack', 'haskell', 'hcl', 'html', 'java', 'javascript', 'jsdoc', 'json', 'julia', 'kotlin', 'lua', 'make', 'markdown', 'objc', 'ocaml', 'perl', 'php', 'python', 'ql', 'r', 'regex', 'rst', 'ruby', 'rust', 'scala', 'sql', 'sqlite', 'toml', 'tsq', 'typescript', 'yaml']
+        # ['bash', 'c', 'c_sharp','commonlisp', 'cpp', 'css', 'dockerfile', 'dot', 'elisp', 'elixir', 'elm', 'embedded_template', 'erlang', 'fixed_form_fortran', 'fortran', 'go', 'gomod', 'hack', 'haskell', 'hcl', 'html', 'java', 'javascript', 'jsdoc', 'json', 'julia', 'kotlin', 'lua', 'make', 'markdown', 'objc', 'ocaml', 'perl', 'php', 'python', 'ql', 'r', 'regex', 'rst', 'ruby', 'rust', 'scala', 'sql', 'sqlite', 'toml', 'tsq', 'typescript', 'yaml']
+        self.valid_languages = ['go', 'gomod', 'python']
         self.file_extension_to_language_map = { ".sh": "bash", ".bash": "bash", ".c": "c", ".cs": "c_sharp", ".lisp": "commonlisp", ".lsp": "commonlisp", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".h": "c", ".css": "css", ".dockerfile": "dockerfile", "Dockerfile": "dockerfile", ".dot": "dot", ".el": "elisp", ".ex": "elixir", ".exs": "elixir", ".elm": "elm", ".ejs": "embedded_template", ".erl": "erlang", ".hrl": "erlang", ".f": "fixed_form_fortran", ".for": "fixed_form_fortran", ".f90": "fortran", ".f95": "fortran", ".go": "go", ".mod": "gomod", "go.mod": "gomod", ".hack": "hack", ".hs": "haskell", ".hcl": "hcl", ".tf": "hcl", ".html": "html", ".htm": "html", ".java": "java", ".js": "javascript", ".jsx": "javascript", ".jsdoc": "jsdoc", ".json": "json", ".jl": "julia", ".kt": "kotlin", ".kts": "kotlin", ".lua": "lua", ".mk": "make", "Makefile": "make", ".md": "markdown", ".m": "objc", ".mm": "objc", ".ml": "ocaml", ".mli": "ocaml", ".pl": "perl", ".pm": "perl", ".php": "php", ".py": "python", ".ql": "ql", ".r": "r", ".regex": "regex", ".rst": "rst", ".rb": "ruby", ".rs": "rust", ".scala": "scala", ".sc": "scala", ".sql": "sql", ".sqlite": "sqlite", ".db": "sqlite", ".toml": "toml", ".tsq": "tsq", ".ts": "typescript", ".tsx": "typescript", ".yaml": "yaml", ".yml": "yaml"}
 
     def _get_git_provider(self, pr_url: str):
@@ -60,6 +62,7 @@ class PRRAGIndexManager:
     def _does_index_exist(self, index_name: str):
         try:
             resp = self.rag_client.list_indexes()
+            get_logger().info(f"List of indexes: {resp}")
             if resp and index_name in resp:
                 return True
         except Exception as e:
@@ -67,7 +70,7 @@ class PRRAGIndexManager:
             raise e
         return False
 
-    def query(self, pr_url: str, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
+    async def query(self, pr_url: str, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
         """
         Query the RAG index for a given pull request URL.
         
@@ -139,6 +142,12 @@ class PRRAGIndexManager:
                 existing_docs[curr_filename] = resp["documents"][0]
 
         for file_info in diff_files:
+            # Skip files that are not in the valid languages
+            language = self.file_extension_to_language(file_info.filename)
+            if not language or language not in self.valid_languages:
+                get_logger().info(f"Skipping file {file_info.filename} as it is not in a valid language.")
+                continue
+
             curr_doc = None
             if file_info.edit_type == EDIT_TYPE.RENAMED and file_info.old_filename and file_info.old_filename in existing_docs:
                 curr_doc = existing_docs[file_info.old_filename]
@@ -184,7 +193,7 @@ class PRRAGIndexManager:
                 continue
         return create_docs, update_docs, deleted_docs
 
-    def create_base_branch_index(self, pr_url: str):
+    async def create_base_branch_index(self, pr_url: str):
         """
         Creates an index of the base (default) branch files for a given pull request URL.
         This method retrieves the default branch from the repository associated with the provided PR URL,
@@ -201,56 +210,70 @@ class PRRAGIndexManager:
         index_name = self._get_pr_base_index_name(git_provider)
         get_logger().info(f"Creating base branch index {index_name} for PR URL {pr_url}.")
 
-        # Check if the index already exists
-        if self._does_index_exist(index_name):
-            get_logger().info(f"Index {index_name} already exists. Skipping creation.")
-            return
+        # Acquire the lock to ensure a single instance creates the index
+        await self.lock.acquire()
+        try:
+            # Check if the index already exists
+            if self._does_index_exist(index_name):
+                get_logger().info(f"Index {index_name} already exists. Skipping creation.")
+                return
 
-        default_branch = git_provider.repo_obj.get_branch(git_provider.repo_obj.default_branch)
-        if not default_branch:
-            get_logger().error(f"Default branch {git_provider.repo_obj.default_branch} not found.")
-            raise ValueError("Default branch not found for the given PR URL.")
+            default_branch = git_provider.repo_obj.get_branch(git_provider.repo_obj.default_branch)
+            if not default_branch:
+                get_logger().error(f"Default branch {git_provider.repo_obj.default_branch} not found.")
+                raise ValueError("Default branch not found for the given PR URL.")
 
-        base_branch_tree = git_provider.repo_obj.get_git_tree(default_branch.commit.sha, recursive=True)
-        batch_docs = []
-        for file_info in base_branch_tree.tree:
-            if file_info.type == "blob":
-                # Might want to check file size / or other attributes here for filtering
-                doc = {}
-                try:
-                    file_content = base64.b64decode(git_provider.repo_obj.get_git_blob(file_info.sha).content).decode()
-                    doc = {
-                        "text": file_content,
-                        "metadata": {
-                            "file_name": file_info.path,
+            base_branch_tree = git_provider.repo_obj.get_git_tree(default_branch.commit.sha, recursive=True)
+            batch_docs = []
+            for file_info in base_branch_tree.tree:
+                if file_info.type == "blob":
+                    # Might want to check file size / or other attributes here for filtering
+                    doc = {}
+                    try:
+                        language = self.file_extension_to_language(file_info.path)
+                        if language == None or language not in self.valid_languages:
+                            # skip files that are not in the valid languages
+                            continue
+
+                        file_content = base64.b64decode(git_provider.repo_obj.get_git_blob(file_info.sha).content).decode()
+                        doc = {
+                            "text": file_content,
+                            "metadata": {
+                                "file_name": file_info.path,
+                            }
                         }
-                    }
-                except Exception as e:
-                    get_logger().error(f"Error decoding file content for {file_info.path}: {e}")
-                    continue
+                    except Exception as e:
+                        get_logger().error(f"Error decoding file content for {file_info.path}: {e}")
+                        continue
 
-                get_logger().info(f"Indexing document {file_info.path} in {index_name} with content {doc}.")
-                language = self.file_extension_to_language(file_info.path)
-                if language and language in self.valid_languages:
-                    doc["metadata"]["language"] = language
-                    doc["metadata"]["split_type"] = "code"
+                    get_logger().info(f"Indexing document {file_info.path} in {index_name} with content {doc}.")
+                    language = self.file_extension_to_language(file_info.path)
+                    if language and language in self.valid_languages:
+                        doc["metadata"]["language"] = language
+                        doc["metadata"]["split_type"] = "code"
 
-                batch_docs.append(doc)
-            if len(batch_docs) >= 10:
+                    batch_docs.append(doc)
+                if len(batch_docs) >= 10:
+                    try:
+                        self.rag_client.index_documents(index_name, batch_docs)
+                    except Exception as e:
+                        get_logger().error(f"Error indexing documents: {e}")
+                    batch_docs = []
+            if batch_docs:
                 try:
-                    self.rag_client.index_documents(index_name, batch_docs)
+                    resp = self.rag_client.index_documents(index_name, batch_docs)
                 except Exception as e:
                     get_logger().error(f"Error indexing documents: {e}")
-                batch_docs = []
-        if batch_docs:
-            try:
-                resp = self.rag_client.index_documents(index_name, batch_docs)
-            except Exception as e:
-                get_logger().error(f"Error indexing documents: {e}")
-                raise e
-        get_logger().info(f"Base branch index {index_name} created successfully for PR URL {pr_url}.")
+                    raise e
+            get_logger().info(f"Base branch index {index_name} created successfully for PR URL {pr_url}.")
+        except Exception as e:
+            get_logger().error(f"Error creating base branch index: {e}")
+            raise e
+        finally:
+            # Release the lock after the index creation is complete
+            self.lock.release()
 
-    def update_base_branch_index(self, pr_url: str):
+    async def update_base_branch_index(self, pr_url: str):
         """
         Updates the index for the base branch of a pull request.
         This method attempts to update the index associated with the base branch of the specified pull request URL.
@@ -264,9 +287,23 @@ class PRRAGIndexManager:
             git_provider = self._get_git_provider(pr_url)
             base_index_name = self._get_pr_base_index_name(git_provider)
 
+            # Check if the base branch index already exists
+            # if it does, make sure its not creating/updating
             if not self._does_index_exist(base_index_name):
-                return self.create_base_branch_index(pr_url)
-
+                return await self.create_base_branch_index(pr_url)
+            else:
+                try:
+                    await self.lock.acquire()
+                finally:
+                    self.lock.release()
+        
+        except Exception as e:
+            get_logger().error(f"Error updating base branch index: {e}")
+            raise e
+        
+            
+        await self.lock.acquire()
+        try:
             create_docs, update_docs, deleted_docs = self._get_pr_docs_for_rag(git_provider)
 
             if not deleted_docs and not update_docs and not create_docs:
@@ -289,8 +326,11 @@ class PRRAGIndexManager:
         except Exception as e:
             get_logger().error(f"Error updating documents: {e}")
             raise e
+        finally:
+            # Release the lock after the update is complete
+            self.lock.release()
 
-    def create_new_pr_index(self, pr_url: str):
+    async def create_new_pr_index(self, pr_url: str):
         """
         Creates a new index for a pull request (PR) using the RAG (Retrieval-Augmented Generation) client.
         This method performs the following steps:
@@ -309,23 +349,29 @@ class PRRAGIndexManager:
         index_name = self._get_pr_head_index_name(git_provider)
         base_index_name = self._get_pr_base_index_name(git_provider)
 
-        try:
-            # Check if the base branch index already exists
-            if not self._does_index_exist(base_index_name):
-                self.create_base_branch_index(pr_url)
 
+        # Check if the base branch index already exists
+        if not self._does_index_exist(base_index_name):
+            await self.create_base_branch_index(pr_url)
+        else:
+            try:
+                await self.lock.acquire()
+            finally:
+                self.lock.release()
+
+        try:
             # On create calls we will always overwrite the index in case of branch reusage
             get_logger().info(f"Creating new index {index_name} for PR URL {pr_url}.")
             self.rag_client.persist_index(base_index_name, path=f"/tmp/{base_index_name}")
             self.rag_client.load_index(index_name, path=f"/tmp/{base_index_name}", overwrite=True)
 
-            self.update_pr_index(pr_url)
+            await self.update_pr_index(pr_url)
 
         except Exception as e:
             get_logger().error(f"Error creating new pr index: {e}")
             raise e
 
-    def update_pr_index(self, pr_url: str):
+    async def update_pr_index(self, pr_url: str):
         """
         Updates the RAG index for a given PR URL by synchronizing document changes based on file diffs.
         This method processes the files changed in the PR and updates the corresponding index by:
@@ -343,7 +389,7 @@ class PRRAGIndexManager:
             git_provider = self._get_git_provider(pr_url)
             index_name = self._get_pr_head_index_name(git_provider)
             if not self._does_index_exist(index_name):
-                return self.create_new_pr_index(pr_url)
+                return await self.create_new_pr_index(pr_url)
 
             create_docs, update_docs, deleted_docs = self._get_pr_docs_for_rag(git_provider)
 
@@ -368,7 +414,7 @@ class PRRAGIndexManager:
             get_logger().error(f"Error updating documents: {e}")
             raise e
 
-    def delete_pr_index(self, pr_url: str):
+    async def delete_pr_index(self, pr_url: str):
         """
         Deletes the RAG index for a given pull request (PR) URL.
         This method retrieves the git provider for the PR URL, constructs the index name,

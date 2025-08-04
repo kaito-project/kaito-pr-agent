@@ -18,7 +18,7 @@ class PRRAGEngine:
         self.index_manager = index_manager
         self.pr_url = pr_url
 
-    def get_pr_head_index_name(self):
+    async def get_pr_head_index_name(self):
         """
         Get the index name for the pull request head.
 
@@ -34,7 +34,7 @@ class PRRAGEngine:
 
         return self.index_manager._get_pr_head_index_name(git_provider)
     
-    def get_pr_base_index_name(self):
+    async def get_pr_base_index_name(self):
         """
         Get the index name for the pull request base.
 
@@ -50,7 +50,7 @@ class PRRAGEngine:
 
         return self.index_manager._get_pr_base_index_name(git_provider)
 
-    def query(self, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
+    async def query(self, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
         """
         Query the RAG index for a given pull request URL.
 
@@ -79,7 +79,7 @@ class PRRAGEngine:
             get_logger().info(f"Querying index {index_name} for PR URL {self.pr_url} with query: {query}")
 
             # Call the RAG client query method
-            response = self.index_manager.query(
+            response = await self.index_manager.query(
                 index_name=index_name,
                 query=query,
                 llm_temperature=llm_temperature,

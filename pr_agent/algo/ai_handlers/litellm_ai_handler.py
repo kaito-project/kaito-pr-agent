@@ -407,7 +407,7 @@ class LiteLLMAIHandler(BaseAiHandler):
 
             # If PRRagEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
             if self.pr_rag_engine is not None:
-                kwargs["index_name"] = self.pr_rag_engine.get_pr_head_index_name()
+                kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
 
             # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
@@ -426,6 +426,10 @@ class LiteLLMAIHandler(BaseAiHandler):
             resp = response["choices"][0]['message']['content']
             finish_reason = response["choices"][0]["finish_reason"]
             get_logger().debug(f"\nAI response:\n{resp}")
+
+            source_nodes = response.get("source_nodes", None)
+            if source_nodes:
+                get_logger().debug(f"Source nodes: {source_nodes}")
 
             # log the full response for debugging
             response_log = self.prepare_logs(response, system, user, resp, finish_reason)

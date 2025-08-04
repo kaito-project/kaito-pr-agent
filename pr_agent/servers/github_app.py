@@ -148,8 +148,6 @@ async def handle_comments_on_pr(body: Dict[str, Any],
     with get_logger().contextualize(**log_context):
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Processing comment on PR {api_url=}, comment_body={comment_body}")
-            if use_rag_engine:
-                agent.ai_handler.pr_rag_engine = PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url)
             await agent.handle_request(api_url, comment_body,
                         notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
         else:
@@ -174,7 +172,7 @@ async def handle_new_pr_opened(body: Dict[str, Any],
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             if use_rag_engine:
                 try:
-                    ragIndexManager.create_new_pr_index(api_url)
+                    await ragIndexManager.create_new_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("pr_commands", agent, body, api_url, log_context)
@@ -238,7 +236,7 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             get_logger().info(f"Performing incremental review for {api_url=} because of {event=} and {action=}")
             if use_rag_engine:
                 try:
-                    ragIndexManager.update_pr_index(api_url)
+                    await ragIndexManager.update_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to update PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("push_commands", agent, body, api_url, log_context)
@@ -250,14 +248,14 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             _duplicate_push_triggers[api_url] -= 1
 
 
-def handle_closed_pr(body, event, action, log_context):
+async def handle_closed_pr(body, event, action, log_context):
     pull_request = body.get("pull_request", {})
     is_merged = pull_request.get("merged", False)
     api_url = pull_request.get("url", "")
     if not is_merged:
         if use_rag_engine:
             try:
-                ragIndexManager.delete_pr_index(api_url)
+                await ragIndexManager.delete_pr_index(api_url)
             except Exception as e:
                 get_logger().error(f"Failed to delete PR index for {api_url=}: {e}")
         return
@@ -268,9 +266,9 @@ def handle_closed_pr(body, event, action, log_context):
     if use_rag_engine:
         try:
             # handle merging of head changes into base branch index
-            ragIndexManager.update_base_branch_index(api_url)
-            # clenup the index created for the head branch of the PR
-            ragIndexManager.delete_pr_index(api_url)
+            await ragIndexManager.update_base_branch_index(api_url)
+            # cleanup the index created for the head branch of the PR
+            await ragIndexManager.delete_pr_index(api_url)
         except Exception as e:
             get_logger().error(f"Failed to handle pr merged rag logic for {api_url=}: {e}")
 
@@ -442,7 +440,7 @@ async def handle_request(body: Dict[str, Any], event: str):
     elif event == 'pull_request' and action == 'synchronize':
         await handle_push_trigger_for_new_commits(body, event, sender,sender_id,  action, log_context, agent)
     elif event == 'pull_request' and action == 'closed':
-        handle_closed_pr(body, event, action, log_context)
+        await handle_closed_pr(body, event, action, log_context)
     else:
         get_logger().info(f"event {event=} action {action=} does not require any handling")
     return {}
