@@ -40,14 +40,18 @@ class LiteLLMAIHandler(BaseAiHandler):
     and provides a method for performing chat completions using the OpenAI ChatCompletion API.
     """
 
-    def __init__(self):
+    def __init__(self, pr_rag_engine=None):
         """
         Initializes the OpenAI API key and other settings from a configuration file.
         Raises a ValueError if the OpenAI key is missing.
+        
+        Args:
+            pr_rag_engine: Optional PRRagEngine instance for enhanced contextual responses.
         """
         self.azure = False
         self.api_base = None
         self.repetition_penalty = None
+        self.pr_rag_engine = pr_rag_engine
 
         if get_settings().get("OPENAI.KEY", None):
             openai.api_key = get_settings().openai.key
@@ -296,6 +300,19 @@ class LiteLLMAIHandler(BaseAiHandler):
         stop=stop_after_attempt(OPENAI_RETRIES),
     )
     async def chat_completion(self, model: str, system: str, user: str, temperature: float = 0.2, img_path: str = None):
+        """
+        Performs chat completion using either PRRagEngine (if available) or standard LLM completion.
+        
+        Args:
+            model (str): The model to use for completion
+            system (str): System prompt
+            user (str): User prompt/query
+            temperature (float, optional): Temperature for LLM generation. Defaults to 0.2.
+            img_path (str, optional): Path to image for vision models. Defaults to None.
+            
+        Returns:
+            tuple: (response_text, finish_reason)
+        """
         try:
             resp, finish_reason = None, None
             deployment_id = self.deployment_id
@@ -388,6 +405,11 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
 
+            # If PRRagEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
+            if self.pr_rag_engine is not None:
+                kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
+
+            # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
         except openai.RateLimitError as e:
             get_logger().error(f"Rate limit error during LLM inference: {e}")
@@ -404,6 +426,10 @@ class LiteLLMAIHandler(BaseAiHandler):
             resp = response["choices"][0]['message']['content']
             finish_reason = response["choices"][0]["finish_reason"]
             get_logger().debug(f"\nAI response:\n{resp}")
+
+            source_nodes = response.get("source_nodes", None)
+            if source_nodes:
+                get_logger().debug(f"Source nodes: {source_nodes}")
 
             # log the full response for debugging
             response_log = self.prepare_logs(response, system, user, resp, finish_reason)

@@ -1,7 +1,7 @@
 import json
 
 import requests
-
+from ..log import get_logger
 
 class KAITORagClient:
     def __init__(self, base_url):
@@ -16,6 +16,7 @@ class KAITORagClient:
         Index documents in the RAGEngine.
         documents: list of dicts, each with 'text' and optional 'metadata'
         """
+        get_logger().info(f"Indexing documents in {index_name} with {len(documents)} documents.")
         url = f"{self.base_url}/index"
         payload = {
             "index_name": index_name,
@@ -32,6 +33,7 @@ class KAITORagClient:
         top_k: int, number of results to return
         metadata: optional dict, additional metadata for the query
         """
+        get_logger().info(f"Querying index {index_name} with query: {query}")
         url = f"{self.base_url}/query"
         payload = {
             "index_name": index_name,
@@ -51,6 +53,7 @@ class KAITORagClient:
         Update a document in the RAGEngine.
         documents: list of dicts, each with 'id', 'text', and optional 'metadata'
         """
+        get_logger().info(f"Updating documents in {index_name} with {len(documents)} documents.")
         url = f"{self.base_url}/indexes/{index_name}/documents"
         payload = {"documents": documents}
         resp = requests.post(url, json=payload, headers=self.headers)
@@ -61,6 +64,7 @@ class KAITORagClient:
         """
         Delete a document from the RAGEngine by its ID.
         """
+        get_logger().info(f"Deleting {len(document_ids)} documents from index {index_name}.")
         url = f"{self.base_url}/indexes/{index_name}/documents/delete"
         payload = {"doc_ids": document_ids}
         resp = requests.post(url, json=payload, headers=self.headers)
@@ -71,6 +75,7 @@ class KAITORagClient:
         """
         List documents in the RAGEngine.
         """
+        get_logger().info(f"Listing documents in index {index_name} with filter: {metadata_filter}, limit: {limit}, offset: {offset}.")
         url = f"{self.base_url}/indexes/{index_name}/documents"
         params = {"limit": limit, "offset": offset }
         if metadata_filter:
@@ -83,6 +88,7 @@ class KAITORagClient:
         """
         List all indexes in the RAGEngine.
         """
+        get_logger().info("Listing all indexes in the RAGEngine.")
         url = f"{self.base_url}/indexes"
         resp = requests.get(url, headers=self.headers)
         resp.raise_for_status()
@@ -92,6 +98,7 @@ class KAITORagClient:
         """
         Persist an index in the RAGEngine.
         """
+        get_logger().info(f"Persisting index {index_name} to path {path}.")
         url = f"{self.base_url}/persist/{index_name}"
         params = {"path": path}
         resp = requests.post(url, params=params, headers=self.headers)
@@ -102,6 +109,7 @@ class KAITORagClient:
         """
         Load an index in the RAGEngine.
         """
+        get_logger().info(f"Loading index {index_name} from path {path}, overwrite={overwrite}.")
         url = f"{self.base_url}/load/{index_name}"
         params = {"path": path, "overwrite": overwrite}
         resp = requests.post(url, params=params, headers=self.headers)
@@ -112,6 +120,7 @@ class KAITORagClient:
         """
         Delete an index in the RAGEngine.
         """
+        get_logger().info(f"Deleting index {index_name}.")
         url = f"{self.base_url}/indexes/{index_name}"
         resp = requests.delete(url, headers=self.headers)
         resp.raise_for_status()

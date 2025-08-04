@@ -26,6 +26,7 @@ from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
 
 from pr_agent.agent.pr_agent import PRAgent
+from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.utils import update_settings_from_args
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.git_providers import (get_git_provider,
@@ -36,7 +37,7 @@ from pr_agent.identity_providers import get_identity_provider
 from pr_agent.identity_providers.identity_provider import Eligibility
 from pr_agent.log import LoggingFormat, get_logger, setup_logger
 from pr_agent.servers.utils import DefaultDictWithTimeout, verify_signature
-from pr_agent.tools.pr_rag_engine import PRRagEngine
+from pr_agent.tools.pr_rag_engine import PRRAGIndexManager, PRRAGEngine
 
 setup_logger(fmt=LoggingFormat.JSON, level=get_settings().get("CONFIG.LOG_LEVEL", "DEBUG"))
 base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -48,7 +49,7 @@ else:
     build_number = "unknown"
 router = APIRouter()
 use_rag_engine = get_settings().get("KAITORAGENGINE.USE_RAG_ENGINE", False)
-ragEngine = PRRagEngine(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
+ragIndexManager = PRRAGIndexManager(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
 
 @router.post("/api/v1/github_webhooks")
 async def handle_github_webhooks(background_tasks: BackgroundTasks, request: Request, response: Response):
@@ -171,7 +172,7 @@ async def handle_new_pr_opened(body: Dict[str, Any],
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             if use_rag_engine:
                 try:
-                    ragEngine.create_new_pr_index(api_url)
+                    await ragIndexManager.create_new_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("pr_commands", agent, body, api_url, log_context)
@@ -235,7 +236,7 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             get_logger().info(f"Performing incremental review for {api_url=} because of {event=} and {action=}")
             if use_rag_engine:
                 try:
-                    ragEngine.update_pr_index(api_url)
+                    await ragIndexManager.update_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to update PR index for {api_url=}: {e}")
             await _perform_auto_commands_github("push_commands", agent, body, api_url, log_context)
@@ -247,12 +248,17 @@ async def handle_push_trigger_for_new_commits(body: Dict[str, Any],
             _duplicate_push_triggers[api_url] -= 1
 
 
-def handle_closed_pr(body, event, action, log_context):
+async def handle_closed_pr(body, event, action, log_context):
     pull_request = body.get("pull_request", {})
     is_merged = pull_request.get("merged", False)
-    if not is_merged:
-        return
     api_url = pull_request.get("url", "")
+    if not is_merged:
+        if use_rag_engine:
+            try:
+                await ragIndexManager.delete_pr_index(api_url)
+            except Exception as e:
+                get_logger().error(f"Failed to delete PR index for {api_url=}: {e}")
+        return
     if get_settings().get("CONFIG.ANALYTICS_FOLDER", ""):
         pr_statistics = get_git_provider()(pr_url=api_url).calc_pr_statistics(pull_request)
         log_context["api_url"] = api_url
@@ -260,9 +266,9 @@ def handle_closed_pr(body, event, action, log_context):
     if use_rag_engine:
         try:
             # handle merging of head changes into base branch index
-            ragEngine.update_base_branch_index(api_url)
-            # clenup the index created for the head branch of the PR
-            ragEngine.delete_pr_index(api_url)
+            await ragIndexManager.update_base_branch_index(api_url)
+            # cleanup the index created for the head branch of the PR
+            await ragIndexManager.delete_pr_index(api_url)
         except Exception as e:
             get_logger().error(f"Failed to handle pr merged rag logic for {api_url=}: {e}")
 
@@ -397,7 +403,11 @@ async def handle_request(body: Dict[str, Any], event: str):
     if not action:
         get_logger().debug(f"No action found in request body, exiting handle_request")
         return {}
-    agent = PRAgent()
+    api_url = get_api_url(event, action, body)
+    if api_url is None or api_url == "":
+        get_logger().debug(f"No API URL found in request body")
+
+    agent = PRAgent(ai_handler=lambda: LiteLLMAIHandler(pr_rag_engine=PRRAGEngine(index_manager=ragIndexManager, pr_url=api_url) if use_rag_engine else None))
     log_context, sender, sender_id, sender_type = get_log_context(body, event, action, build_number)
 
     # logic to ignore PRs opened by bot, PRs with specific titles, labels, source branches, or target branches
@@ -430,7 +440,7 @@ async def handle_request(body: Dict[str, Any], event: str):
     elif event == 'pull_request' and action == 'synchronize':
         await handle_push_trigger_for_new_commits(body, event, sender,sender_id,  action, log_context, agent)
     elif event == 'pull_request' and action == 'closed':
-        handle_closed_pr(body, event, action, log_context)
+        await handle_closed_pr(body, event, action, log_context)
     else:
         get_logger().info(f"event {event=} action {action=} does not require any handling")
     return {}
@@ -494,6 +504,22 @@ async def _perform_auto_commands_github(commands_conf: str, agent: PRAgent, body
         new_command = ' '.join([command] + other_args)
         get_logger().info(f"{commands_conf}. Performing auto command '{new_command}', for {api_url=}")
         await agent.handle_request(api_url, new_command)
+
+def get_api_url(event, action, body):
+    if action == "created":
+        if "issue" in body and "pull_request" in body["issue"] and "url" in body["issue"]["pull_request"]:
+            return body.get("issue", {}).get("pull_request", {}).get("url")
+        elif "comment" in body and "pull_request_url" in body["comment"]:
+            return body.get("comment", {}).get("pull_request_url")
+    elif event == 'pull_request':
+        return body.get("pull_request", {}).get("url")
+    # handle new issues
+    elif event == 'issues' and action == 'opened':
+        return body.get("issue", {}).get("url")
+    elif event == "issue_comment" and 'edited' in action:
+        return ""
+    else:
+        return ""
 
 
 @router.get("/")
