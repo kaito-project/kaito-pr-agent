@@ -4,7 +4,7 @@ import asyncio
 from pr_agent.algo.types import EDIT_TYPE
 from pr_agent.clients.kaito_rag_client import KAITORagClient
 from pr_agent.git_providers import (get_git_provider,
-                                    get_git_provider_with_context)
+                                    get_git_provider_with_context, git_provider)
 
 from ..log import get_logger
 
@@ -14,9 +14,11 @@ class PRRAGIndexManager:
     PRRAGIndexManager is responsible for managing Retrieval-Augmented Generation (RAG) indexes for pull requests (PRs) and their associated branches in a Git repository.
     It interacts with a RAG client to create, update, and manage document indexes based on the state of files in the repository and the changes introduced by PRs.
     '''
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, enabled_base_branches: list[str] = ["main"], ignore_directories: list[str] = []):
         self.rag_client = KAITORagClient(base_url)
         self.lock = asyncio.Lock()
+        self.enabled_base_branches = enabled_base_branches
+        self.ignore_directories = ignore_directories
         # these are the languages that are supported by tree sitter
         # ['bash', 'c', 'c_sharp','commonlisp', 'cpp', 'css', 'dockerfile', 'dot', 'elisp', 'elixir', 'elm', 'embedded_template', 'erlang', 'fixed_form_fortran', 'fortran', 'go', 'gomod', 'hack', 'haskell', 'hcl', 'html', 'java', 'javascript', 'jsdoc', 'json', 'julia', 'kotlin', 'lua', 'make', 'markdown', 'objc', 'ocaml', 'perl', 'php', 'python', 'ql', 'r', 'regex', 'rst', 'ruby', 'rust', 'scala', 'sql', 'sqlite', 'toml', 'tsq', 'typescript', 'yaml']
         self.valid_languages = ['go', 'gomod', 'python']
@@ -59,6 +61,19 @@ class PRRAGIndexManager:
         index_name = f"{repo_name}_{branch_name}"
         return index_name
 
+    def _is_valid_base_branch(self, git_provider):
+        """
+        Check if the given branch name is a valid base branch.
+        
+        Args:
+            branch_name (str): The name of the branch to check.
+            
+        Returns:
+            bool: True if the branch is a valid base branch, False otherwise.
+        """
+        pr_base_branch = git_provider.pr.base.ref
+        return pr_base_branch in self.enabled_base_branches
+
     def _does_index_exist(self, index_name: str):
         try:
             resp = self.rag_client.list_indexes()
@@ -68,6 +83,24 @@ class PRRAGIndexManager:
         except Exception as e:
             get_logger().error(f"Error checking index existence: {e}")
             raise e
+        return False
+    
+    def _should_ignore_file(self, file_path: str) -> bool:
+        """
+        Check if a file should be ignored based on the ignore_directories list.
+        
+        Args:
+            file_path (str): The path of the file to check.
+            
+        Returns:
+            bool: True if the file should be ignored, False otherwise.
+        """
+        if not self.ignore_directories or self.ignore_directories == []:
+            return False
+
+        for ignore_dir in self.ignore_directories:
+            if file_path.startswith(ignore_dir) or file_path == ignore_dir:
+                return True
         return False
 
     async def query(self, pr_url: str, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
@@ -134,6 +167,11 @@ class PRRAGIndexManager:
         create_docs = []
         existing_docs = {}
         for file_info in diff_files:
+            # Skip files in ignored directories
+            if self._should_ignore_file(file_info.filename):
+                get_logger().info(f"Skipping file {file_info.filename} as it is in an ignored directory.")
+                continue
+
             curr_filename = file_info.filename
             if file_info.edit_type == EDIT_TYPE.RENAMED and file_info.old_filename:
                 curr_filename = file_info.old_filename
@@ -207,6 +245,10 @@ class PRRAGIndexManager:
         """
         git_provider = self._get_git_provider(pr_url)
 
+        if not self._is_valid_base_branch(git_provider):
+            get_logger().info(f"Base branch {git_provider.pr.base.ref} is not in enabled base branches. Skipping create base branch for PR URL {pr_url}.")
+            return
+
         index_name = self._get_pr_base_index_name(git_provider)
         get_logger().info(f"Creating base branch index {index_name} for PR URL {pr_url}.")
 
@@ -227,6 +269,11 @@ class PRRAGIndexManager:
             batch_docs = []
             for file_info in base_branch_tree.tree:
                 if file_info.type == "blob":
+                    # Skip files in ignored directories
+                    if self._should_ignore_file(file_info.path):
+                        get_logger().info(f"Skipping file {file_info.path} as it is in an ignored directory.")
+                        continue
+
                     # Might want to check file size / or other attributes here for filtering
                     doc = {}
                     try:
@@ -286,6 +333,10 @@ class PRRAGIndexManager:
         try:
             git_provider = self._get_git_provider(pr_url)
             base_index_name = self._get_pr_base_index_name(git_provider)
+
+            if not self._is_valid_base_branch(git_provider):
+                get_logger().info(f"Base branch {git_provider.pr.base.ref} is not in enabled base branches. Skipping update base branch for PR URL {pr_url}.")
+                return
 
             # Check if the base branch index already exists
             # if it does, make sure its not creating/updating
@@ -349,6 +400,9 @@ class PRRAGIndexManager:
         index_name = self._get_pr_head_index_name(git_provider)
         base_index_name = self._get_pr_base_index_name(git_provider)
 
+        if not self._is_valid_base_branch(git_provider):
+            get_logger().info(f"Base branch {git_provider.pr.base.ref} is not in enabled base branches. Skipping index creation for PR URL {pr_url}.")
+            return
 
         # Check if the base branch index already exists
         if not self._does_index_exist(base_index_name):
@@ -387,6 +441,11 @@ class PRRAGIndexManager:
         """
         try:
             git_provider = self._get_git_provider(pr_url)
+            
+            if not self._is_valid_base_branch(git_provider):
+                get_logger().info(f"Base branch {git_provider.pr.base.ref} is not in enabled base branches. Skipping update pr branch for PR URL {pr_url}.")
+                return
+
             index_name = self._get_pr_head_index_name(git_provider)
             if not self._does_index_exist(index_name):
                 return await self.create_new_pr_index(pr_url)
