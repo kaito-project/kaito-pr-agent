@@ -34,6 +34,13 @@ class PRRAGEngine:
 
         return self.index_manager._get_pr_head_index_name(git_provider)
     
+    async def is_valid_pr_base_branch(self):
+        git_provider = self.index_manager._get_git_provider(self.pr_url)
+        if not git_provider:
+            raise ValueError(f"Git provider not found for PR URL: {self.pr_url}")
+
+        return self.index_manager._is_valid_base_branch(git_provider)
+
     async def get_pr_base_index_name(self):
         """
         Get the index name for the pull request base.

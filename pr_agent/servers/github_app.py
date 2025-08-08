@@ -49,7 +49,11 @@ else:
     build_number = "unknown"
 router = APIRouter()
 use_rag_engine = get_settings().get("KAITORAGENGINE.USE_RAG_ENGINE", False)
-ragIndexManager = PRRAGIndexManager(base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""))
+ragIndexManager = PRRAGIndexManager(
+    base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""),
+    enabled_base_branches=get_settings().get("KAITORAGENGINE.ENABLED_BASE_BRANCHES", []),
+    ignore_directories=get_settings().get("KAITORAGENGINE.IGNORE_DIRECTORIES", []),
+)
 
 @router.post("/api/v1/github_webhooks")
 async def handle_github_webhooks(background_tasks: BackgroundTasks, request: Request, response: Response):

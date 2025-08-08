@@ -407,7 +407,9 @@ class LiteLLMAIHandler(BaseAiHandler):
 
             # If PRRagEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
             if self.pr_rag_engine is not None:
-                kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
+                if await self.pr_rag_engine.is_valid_pr_base_branch():
+                    get_logger().info(f"Base branch is valid for PR URL {self.pr_rag_engine.pr_url}. adding index name to request for RAG features.")
+                    kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
 
             # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
