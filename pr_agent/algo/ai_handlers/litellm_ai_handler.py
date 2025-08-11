@@ -410,6 +410,7 @@ class LiteLLMAIHandler(BaseAiHandler):
                 if await self.pr_rag_engine.is_valid_pr_base_branch():
                     get_logger().info(f"Base branch is valid for PR URL {self.pr_rag_engine.pr_url}. adding index name to request for RAG features.")
                     kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
+                    kwargs["max_tokens"] = get_settings().config.custom_model_max_tokens
 
             # Fall back to regular acompletion if PRRagEngine is not available or failed
             response = await acompletion(**kwargs)
