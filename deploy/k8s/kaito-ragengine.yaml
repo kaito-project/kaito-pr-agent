@@ -1,0 +1,15 @@
+apiVersion: kaito.sh/v1alpha1
+kind: RAGEngine
+metadata:
+  name: ragengine
+spec:
+  compute:
+    instanceType: "Standard_NC24ads_A100_v4"
+    labelSelector:
+      matchLabels:
+        apps: ragengine
+  embedding:
+    local:
+      modelID: "BAAI/bge-small-en-v1.5"
+  inferenceService:
+    url: "http://workspace-qwen-2-5-coder-32b-instruct.default.svc/v1/chat/completions"
