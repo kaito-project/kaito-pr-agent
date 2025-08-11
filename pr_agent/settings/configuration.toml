@@ -372,3 +372,4 @@ use_rag_engine=false
 rag_engine_url=""
 enabled_base_branches = ["main"]
 ignore_directories = [".github/"]
+token_buffer=2500
