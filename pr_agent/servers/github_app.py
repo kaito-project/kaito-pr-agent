@@ -152,6 +152,14 @@ async def handle_comments_on_pr(body: Dict[str, Any],
     with get_logger().contextualize(**log_context):
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Processing comment on PR {api_url=}, comment_body={comment_body}")
+            if use_rag_engine:
+                try:
+                    # we have to validate a pr index exists on comments in the event of rag restarts
+                    index_name = ragIndexManager._get_pr_head_index_name(provider)
+                    if not ragIndexManager._does_index_exist(index_name):
+                        await ragIndexManager.create_new_pr_index(api_url)
+                except Exception as e:
+                    get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
             await agent.handle_request(api_url, comment_body,
                         notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
         else:
