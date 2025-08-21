@@ -59,24 +59,6 @@ class PRRAGEngine:
             raise ValueError(f"Git provider not found for PR URL: {self.pr_url}")
 
         return self.index_manager._get_pr_base_index_name(git_provider)
-    
-    async def get_request_max_tokens(self, max_tokens: int, system: str = "", user: str = ""):
-        """
-        Get the maximum tokens allowed for the request based on the model and rag buffer.
-
-        Returns:
-            int: The maximum tokens allowed for the request.
-
-        Raises:
-            ValueError: If the model is not supported.
-        """
-
-        git_provider = self.index_manager._get_git_provider(self.pr_url)
-        if not git_provider:
-            raise ValueError(f"Git provider not found for PR URL: {self.pr_url}")
-
-        token_handler = TokenHandler(git_provider.pr, {}, system, user)
-        return max_tokens - token_handler.prompt_tokens - RAG_BUFFER_TOKENS
 
     async def query(self, query: str, llm_temperature: float = 0.7, llm_max_tokens: int = 1000, top_k: int = 5):
         """
