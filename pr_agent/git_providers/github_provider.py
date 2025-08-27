@@ -84,6 +84,9 @@ class GithubProvider(GitProvider):
                                    f"not have a valid repository: {self.get_git_repo_url(issue_url)}")
                 return None
             # else: Valid repo handle:
+            # Store the repository object for later use
+            self.repo_obj = repo_obj
+            self.repo = repo_name
             return repo_obj.get_issue(issue_number)
         except Exception as e:
             get_logger().exception(f"Failed to get an issue object for issue: {issue_url}, belonging to owner/repo: {repo_name}")
@@ -207,6 +210,11 @@ class GithubProvider(GitProvider):
                 return self.comments[index]
 
     def get_files(self):
+        # When working with issues, not PRs, return an empty list
+        if self.pr is None:
+            get_logger().info("get_files() called in issue context - returning empty list")
+            return []
+            
         if self.incremental.is_incremental and self.unreviewed_files_set:
             return self.unreviewed_files_set.values()
         try:
@@ -844,8 +852,8 @@ class GithubProvider(GitProvider):
         self.auth = None
         if self.deployment_type == 'app':
             try:
-                private_key = get_settings().github.private_key
-                app_id = get_settings().github.app_id
+                private_key = get_settings().get("GITHUB.PRIVATE_KEY")
+                app_id = get_settings().get("GITHUB.APP_ID")
             except AttributeError as e:
                 raise ValueError("GitHub app ID and private key are required when using GitHub app deployment") from e
             if not self.installation_id:
