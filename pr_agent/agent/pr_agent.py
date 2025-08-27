@@ -30,6 +30,7 @@ from pr_agent.tools.pr_help_docs import PRHelpDocs
 from pr_agent.tools.pr_help_message import PRHelpMessage
 from pr_agent.tools.pr_line_questions import PR_LineQuestions
 from pr_agent.tools.pr_questions import PRQuestions
+from pr_agent.tools.pr_rag_edit import PRRagEdit
 from pr_agent.tools.pr_reviewer import PRReviewer
 from pr_agent.tools.pr_similar_issue import PRSimilarIssue
 from pr_agent.tools.pr_update_changelog import PRUpdateChangelog
@@ -46,6 +47,7 @@ command2class = {
     "ask": PRQuestions,
     "ask_question": PRQuestions,
     "ask_line": PR_LineQuestions,
+    "rag_edit": PRRagEdit,
     "update_changelog": PRUpdateChangelog,
     "config": PRConfig,
     "settings": PRConfig,

@@ -350,17 +350,35 @@ class GitProvider(ABC):
         return output[:max_chars] + '...' if len(output) > max_chars else output
 
 
-def get_main_pr_language(languages, files) -> str:
+def get_main_pr_language(languages, files, is_issue_context=False) -> str:
     """
     Get the main language of the commit. Return an empty string if cannot determine.
+    Parameters:
+        languages: Dictionary of languages and their byte counts
+        files: List of files in the PR
+        is_issue_context: Whether this is being called in an issue context
     """
     main_language_str = ""
     if not languages:
         get_logger().info("No languages detected")
         return main_language_str
+    
     if not files:
-        get_logger().info("No files in diff")
-        return main_language_str
+        # In an issue context, try to determine language from repository stats
+        if is_issue_context:
+            get_logger().info("No files in diff (issue context), attempting to determine language from repository")
+            try:
+                # If we have language information from the repository, use the top language
+                if languages:
+                    top_language = max(languages, key=languages.get).lower()
+                    return top_language
+            except Exception as e:
+                get_logger().info(f"Failed to determine language from repository: {e}")
+                return main_language_str
+        else:
+            # Original behavior for PR contexts with no files
+            get_logger().info("No files in diff")
+            return main_language_str
 
     try:
         top_language = max(languages, key=languages.get).lower()

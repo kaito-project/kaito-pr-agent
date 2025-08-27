@@ -359,6 +359,50 @@ def should_process_pr_logic(body) -> bool:
     return True
 
 
+def normalize_file_path(file_path: str) -> str:
+    """
+    Normalize a file path to be relative to the repository root.
+    - If the path starts with '/', remove it
+    - If the path is empty, return empty
+    """
+    if not file_path:
+        return ""
+    # Remove leading slash if present
+    if file_path.startswith('/'):
+        file_path = file_path[1:]
+    return file_path
+
+
+def extract_rag_edit_args(issue_body: str) -> Tuple[str, str]:
+    """
+    Extract file path and RAG prompt from the issue body.
+    
+    Format expected:
+    /rag_edit <file_path> <RAG prompt>
+    """
+    # Get all content after the /rag_edit command
+    if not issue_body:
+        return "", ""
+        
+    # Extract the content after /rag_edit
+    match = re.search(r'/rag_edit\s+(.*?)(?:\r?\n|$)', issue_body, re.DOTALL)
+    if not match:
+        return "", ""
+    
+    command_content = match.group(1).strip()
+    
+    # Find the first space to separate file path from prompt
+    space_index = command_content.find(' ')
+    if space_index == -1:
+        # No space found, assume it's all file path
+        return normalize_file_path(command_content), ""
+    
+    file_path = command_content[:space_index].strip()
+    rag_prompt = command_content[space_index:].strip()
+    
+    return normalize_file_path(file_path), rag_prompt
+
+
 async def handle_new_issue(body: Dict[str, Any],
                            event: str,
                            sender: str,
@@ -487,9 +531,48 @@ async def _perform_auto_commands_github(commands_conf: str, agent: PRAgent, body
         split_command = command.split(" ")
         command = split_command[0]
         args = split_command[1:]
+        
         if command == "/help_docs":
             issue_body = body.get("issue", {}).get("body", "")
             command = f"{command} {issue_body}"
+        elif command == "/rag_edit":
+            issue_body = body.get("issue", {}).get("body", "")
+            file_path, rag_prompt = extract_rag_edit_args(issue_body)
+            
+            # Validate file path and prompt
+            if not file_path:
+                # File path is required
+                git_provider = get_git_provider()(api_url)
+                git_provider.publish_comment("Error: File path not provided. Usage: /rag_edit <file_path> <RAG prompt>")
+                continue
+                
+            # Create a well-formed command that includes the file path and RAG prompt
+            command = f"{command} {file_path}"
+            if rag_prompt:
+                command = f"{command} {rag_prompt}"
+                
+            # Pre-check if file exists in the repository
+            try:
+                git_provider = get_git_provider()(api_url)
+                # Make sure repo_obj is available
+                if not git_provider.repo_obj:
+                    git_provider._get_repo()
+                
+                if hasattr(git_provider.repo_obj, 'default_branch'):
+                    default_branch = git_provider.repo_obj.default_branch
+                    file_exists = git_provider.get_pr_file_content(file_path, branch=default_branch)
+                    
+                    if not file_exists:
+                        git_provider.publish_comment(f"Error: File '{file_path}' not found in the repository.")
+                        continue
+                else:
+                    # Skip file existence check if repo_obj or default_branch is not available
+                    get_logger().warning(f"Could not verify file existence for {file_path}. Repository object not fully initialized.")
+            except Exception as e:
+                git_provider = get_git_provider()(api_url)
+                git_provider.publish_comment(f"Error checking file existence: {str(e)}")
+                continue
+        
         other_args = update_settings_from_args(args)
         new_command = ' '.join([command] + other_args)
         get_logger().info(f"{commands_conf}. Performing auto command '{new_command}', for {api_url=}")
