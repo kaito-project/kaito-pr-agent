@@ -6,7 +6,7 @@
 
 [config]
 # models
-model="hosted_vllm/phi-3.5-mini"  # Updated to match the Kubernetes service name
+model="o4-mini"
 fallback_models=["gpt-4.1"]
 #model_reasoning="o4-mini" # dedictated reasoning model for self-reflection
 #model_weak="gpt-4o" # optional, a weaker model to use for some easier tasks
@@ -31,7 +31,7 @@ response_language="en-US" # Language locales code for PR responses in ISO 3166 a
 max_description_tokens = 500
 max_commits_tokens = 500
 max_model_tokens = 32000 # Limits the maximum number of tokens that can be used by any model, regardless of the model's default capabilities.
-custom_model_max_tokens=8192 # Set appropriate token limit for phi-3.5-mini
+custom_model_max_tokens=-1 # for models not in the default list
 model_token_count_estimate_factor=0.3 # factor to increase the token count estimate, in order to reduce likelihood of model failure due to too many tokens - applicable only when requesting an accurate estimate.
 max_diff_context_percent=0.5
 # patch extension logic
@@ -230,42 +230,13 @@ enable_help_text=false
 
 [github]
 # The type of deployment to create. Valid values are 'app' or 'user'.
-deployment_type = "app"
+deployment_type = "user"
 ratelimit_retries = 5
 base_url = "https://api.github.com"
 publish_inline_comments_fallback_with_verification = true
 try_fix_invalid_inline_comments = true
 app_name = "pr-agent"
 ignore_bot_pr = true
-app_id = 1654757 # The GitHub App ID, replace with your own.
-private_key = """-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAsV/IH3fJCnnLarHS+JPScNl/IOOevI75PbX3T7srkFrPmfyU
-hstwXbj1PJOkCoMPS+IwMs3xfKGEjdhhAB20Nfq+LI0cRm0QniXC2rh0QlgkXO3B
-yi2PF1NIPmQigqrra/UVcGzLePn5bw6hjU/wm3NGG1Nv63wb3wxm+Zsd7uCupNwJ
-3edrv5JS0qDO82Ovn8i0/anW5wMmwjajIQqbBfri08KW/c6eGjoWEwW5wNie/ioD
-JVXxboBonJlylMCaL7stIJHDPKMBE18rXrHK9hiAuNJ1/5S3n1Y3ZNL7RNcp5KV6
-ZWmqwU9yTfKeErDYgJ5ObW5PKy2z3R+U4WG+qQIDAQABAoIBAAJ4lCAkGg/kTHor
-CgZegNMDpKq/oQl9cGl0rIJW2C+FpFi/1Q3frawQlJIIeIOQ+diTyRocFl4nHeKf
-/hHzV/xchuO1/4vXnyCk5AcKBMybz73frhBz/AdWKK591KE/YlI5stfDHD6ONPRg
-Hs4KLA7uVy6wReHg875yvMiDabJXNwU9D/+VKZ6r5jw7QAr87Tk9dQgQLOftljnR
-Jj5eXUqoaBRAEL+0Gc2/F+bHqN0VlxfPlgL6IgBJjf2TOpcJP4BFrMI9C0qdoRXS
-DFEuFwWUxj+wYoev1qFZx5PDiSJXM5zOxhz+nHLuxxxhNFJB7V8OetcoQbyfMv5h
-vi6hGhUCgYEA4ZBKDz5w0E83x0Zdve77N1p1wcs1jgEWYYaWgCDGMA0TQWLT4iYu
-dCeqk0/tTvgRWqmHxuSjIbant/+RzzoSuzT2t87X7eMbfzoinf18j/0EyDF3sIk2
-Aap4DlzcWw9r3F5ixN4rUUHZ4a+11YHDjMHvOrKM/3IWkJ0LSsep4M8CgYEAyU7e
-ddDEgAG7lnJUX73B2zQHcqFur35SOuKipK2pLLfwHcCGHp2gTVHsa4ZfdPNFZQY2
-nRx8s4+YHw1oDCW65h+66oxiM6hXpMWSUHhd1Liku3uuRHX8e9yjk/1G2OIMQyWy
-VAQYpwO95Pj/LjhArVOdcOwzxuyzbNTDGO1WFwcCgYAqUtGipJu0anjT2l8yiUn3
-6/BWiZOl7oxNhlxs9DlbwMhRJ4MMVw+2Wc8GzyN/Asr20QKaDkKRy90SiFDKqmHj
-YJ++g4A+sbNyHu1p6atatSYVjjqgFE7e5yaZw1DRgUZC1i8AM5O7Lnj8gOTEiBGy
-Mp15zRDpyXV0cxMwV+CHPwKBgAKJhfBCM1fRrcWVp06Vm63hl/5v3m9DzlGDrb0Z
-mzo/Dz2wwX/9SJnw4GPyi51zu3ose9+7Di9NLgOmLZuJljN0TuzJ3Cr+gixHeTKe
-ccBOm3TpeCbQvd/pxf4FgTEWmET4YqkAbDceqvQJ112Dw/zrQt67e2OUdCZ5AAR+
-aUldAoGBALdBcubJ5JHpSBu3iccL+VZkgIRS0b1P0MmnOlvajNlnJX+Gq7IKeyr7
-CH/AiZ7B+GD8u+5eBEvloh5xxzfr5EypeIzxmLCWjZ9Eg/ZviE4BhdAndw/SQX+I
-l8ZZAIkPUdtBxzFUs71yKh9TAZvJdbTYiSXK/3FKNU4sMoImJ3Bh
------END RSA PRIVATE KEY-----
-"""
 
 [github_action_config]
 # auto_review = true    # set as env var in .github/workflows/pr-agent.yaml
@@ -286,7 +257,7 @@ pr_commands = [
 ]
 handle_issue_actions = ['opened']
 issue_commands = [
-    "/rag_edit",
+    "/help_docs"
 ]
 # settings for "pull_request" event with "synchronize" action - used to detect and handle push triggers for new commits
 handle_push_trigger = false

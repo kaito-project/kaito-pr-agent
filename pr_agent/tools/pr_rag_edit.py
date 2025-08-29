@@ -33,11 +33,20 @@ class PRRagEdit:
         self.file_path, self.rag_prompt = self.parse_args(args)
         
         # Get repository language
-        self.main_language = get_main_pr_language(
-            self.git_provider.get_languages(), 
-            self.git_provider.get_files(),
-            is_issue_context=hasattr(self.git_provider, 'issue_main') and self.git_provider.issue_main is not None
-        )
+        if hasattr(self.git_provider, 'issue_main') and self.git_provider.issue_main is not None:
+            # Special handling for issue context - use repository's top language
+            languages = self.git_provider.get_languages()
+            if languages:
+                self.main_language = max(languages, key=languages.get).lower()
+                get_logger().info(f"Using repository's top language in issue context: {self.main_language}")
+            else:
+                self.main_language = ""
+        else:
+            # Normal PR context
+            self.main_language = get_main_pr_language(
+                self.git_provider.get_languages(), 
+                self.git_provider.get_files()
+            )
         
         # Initialize AI handler
         self.ai_handler = ai_handler()
