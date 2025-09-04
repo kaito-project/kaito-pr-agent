@@ -16,6 +16,8 @@ import os
 import uuid
 from functools import partial
 
+from jinja2 import Environment, StrictUndefined
+
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.config_loader import get_settings
@@ -112,14 +114,45 @@ class PRRagEdit:
                 file_content = self.git_provider.get_pr_file_content(self.file_path, branch=base_branch)
                 if not file_content:
                     raise FileNotFoundError(f"File {self.file_path} not found in the repository")
+                get_logger().info(f"Successfully retrieved file content for {self.file_path} with {len(file_content)} characters")
             except Exception as e:
                 if get_settings().config.publish_output:
                     self.git_provider.publish_comment(f"Error: Could not read file {self.file_path}: {str(e)}")
                 return
             
-            # In the future, this would use RAG to modify the file content
-            # For now, just use the original content
-            edited_content = file_content
+            # Use AI to modify the file content based on the RAG prompt
+            try:
+                # Prepare variables for the templates
+                variables = {
+                    "file_path": self.file_path,
+                    "file_content": file_content,
+                    "edit_request": self.rag_prompt,
+                    "language": self.main_language,
+                    "issue_context": ""  # Adding empty issue_context to prevent template rendering errors
+                }
+                
+                # Render the prompt templates
+                environment = Environment(undefined=StrictUndefined)
+                system_prompt = environment.from_string(get_settings().pr_rag_edit_prompt.system).render(variables)
+                user_prompt = environment.from_string(get_settings().pr_rag_edit_prompt.user).render(variables)
+                
+                # Call the AI model to get the edited content
+                get_logger().info(f"Calling AI model to edit file content")
+                response, finish_reason = await self.ai_handler.chat_completion(
+                    model=get_settings().config.model, 
+                    temperature=get_settings().config.temperature, 
+                    system=system_prompt, 
+                    user=user_prompt
+                )
+                
+                # Use the response as the edited content
+                edited_content = response
+                get_logger().info(f"Successfully got edited content with {len(edited_content)} characters")
+            except Exception as e:
+                get_logger().error(f"Error generating edited content: {e}")
+                if get_settings().config.publish_output:
+                    self.git_provider.publish_comment(f"Error: Failed to generate edited content: {str(e)}")
+                return
             
             # Create or update the file in the new branch
             try:
