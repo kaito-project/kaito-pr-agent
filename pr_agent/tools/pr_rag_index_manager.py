@@ -4,7 +4,9 @@ import asyncio
 from pr_agent.algo.types import EDIT_TYPE
 from pr_agent.clients.kaito_rag_client import KAITORagClient
 from pr_agent.git_providers import (get_git_provider,
-                                    get_git_provider_with_context, git_provider)
+                                    get_git_provider_with_context,
+                                    get_git_provider_for_repo,
+                                    git_provider)
 
 from ..log import get_logger
 
@@ -21,11 +23,18 @@ class PRRAGIndexManager:
         self.ignore_directories = ignore_directories
         # these are the languages that are supported by tree sitter
         # ['bash', 'c', 'c_sharp','commonlisp', 'cpp', 'css', 'dockerfile', 'dot', 'elisp', 'elixir', 'elm', 'embedded_template', 'erlang', 'fixed_form_fortran', 'fortran', 'go', 'gomod', 'hack', 'haskell', 'hcl', 'html', 'java', 'javascript', 'jsdoc', 'json', 'julia', 'kotlin', 'lua', 'make', 'markdown', 'objc', 'ocaml', 'perl', 'php', 'python', 'ql', 'r', 'regex', 'rst', 'ruby', 'rust', 'scala', 'sql', 'sqlite', 'toml', 'tsq', 'typescript', 'yaml']
-        self.valid_languages = ['go', 'gomod', 'python']
+        self.valid_languages = ['go', 'gomod', 'python', 'c']
         self.file_extension_to_language_map = { ".sh": "bash", ".bash": "bash", ".c": "c", ".cs": "c_sharp", ".lisp": "commonlisp", ".lsp": "commonlisp", ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".h": "c", ".css": "css", ".dockerfile": "dockerfile", "Dockerfile": "dockerfile", ".dot": "dot", ".el": "elisp", ".ex": "elixir", ".exs": "elixir", ".elm": "elm", ".ejs": "embedded_template", ".erl": "erlang", ".hrl": "erlang", ".f": "fixed_form_fortran", ".for": "fixed_form_fortran", ".f90": "fortran", ".f95": "fortran", ".go": "go", ".mod": "gomod", "go.mod": "gomod", ".hack": "hack", ".hs": "haskell", ".hcl": "hcl", ".tf": "hcl", ".html": "html", ".htm": "html", ".java": "java", ".js": "javascript", ".jsx": "javascript", ".jsdoc": "jsdoc", ".json": "json", ".jl": "julia", ".kt": "kotlin", ".kts": "kotlin", ".lua": "lua", ".mk": "make", "Makefile": "make", ".md": "markdown", ".m": "objc", ".mm": "objc", ".ml": "ocaml", ".mli": "ocaml", ".pl": "perl", ".pm": "perl", ".php": "php", ".py": "python", ".ql": "ql", ".r": "r", ".regex": "regex", ".rst": "rst", ".rb": "ruby", ".rs": "rust", ".scala": "scala", ".sc": "scala", ".sql": "sql", ".sqlite": "sqlite", ".db": "sqlite", ".toml": "toml", ".tsq": "tsq", ".ts": "typescript", ".tsx": "typescript", ".yaml": "yaml", ".yml": "yaml"}
 
     def _get_git_provider(self, pr_url: str):
-        git_provider = get_git_provider_with_context(pr_url)
+        # If the URL is an issue URL or just a repo URL (no "/pull/" or "/pr/"), 
+        # use get_git_provider_for_repo which has special handling for these cases
+        if "/issues/" in pr_url or (("/pull/" not in pr_url) and ("/pr/" not in pr_url)):
+            git_provider = get_git_provider_for_repo(pr_url)
+        else:
+            # Otherwise, use the existing mechanism for PR URLs
+            git_provider = get_git_provider_with_context(pr_url)
+            
         if not git_provider:
             get_logger().error(f"Git provider not found for PR URL {pr_url}.")
             raise ValueError("Git provider not found for the given PR URL.")
@@ -47,16 +56,28 @@ class PRRAGIndexManager:
 
         # Build index_name from repo and branch
         repo_name = git_provider.repo.replace('/', '_')
-        branch_name = git_provider.pr.base.ref.replace('/', '_')
+        
+        # Check if PR exists before accessing its attributes
+        if not hasattr(git_provider, 'pr') or git_provider.pr is None:
+            # If there's no PR, use the default branch
+            branch_name = git_provider.repo_obj.default_branch.replace('/', '_')
+        else:
+            branch_name = git_provider.pr.base.ref.replace('/', '_')
+            
         index_name = f"{repo_name}_{branch_name}"
         return index_name
 
     def _get_repo_default_branch_index_name(self, git_provider):
         if not git_provider:
             raise ValueError("Git provider not found for the given PR URL.")
-
+            
         # Build index_name from repo and branch
         repo_name = git_provider.repo.replace('/', '_')
+        
+        # Add null check to prevent NoneType error
+        if git_provider.repo_obj is None:
+            raise ValueError("Repository object is None, cannot access default_branch")
+            
         branch_name = git_provider.repo_obj.default_branch.replace('/', '_')
         index_name = f"{repo_name}_{branch_name}"
         return index_name
@@ -71,6 +92,11 @@ class PRRAGIndexManager:
         Returns:
             bool: True if the branch is a valid base branch, False otherwise.
         """
+        # Check if PR exists before accessing its attributes
+        if not hasattr(git_provider, 'pr') or git_provider.pr is None:
+            # If there's no PR, use the default branch
+            return git_provider.repo_obj.default_branch in self.enabled_base_branches
+        
         pr_base_branch = git_provider.pr.base.ref
         return pr_base_branch in self.enabled_base_branches
 
@@ -260,6 +286,9 @@ class PRRAGIndexManager:
                 get_logger().info(f"Index {index_name} already exists. Skipping creation.")
                 return
 
+            if git_provider.repo_obj is None:
+                get_logger().error(f"ERROR: repo_obj is None in create_base_branch_index")
+                raise ValueError("Repository object is None in create_base_branch_index")
             default_branch = git_provider.repo_obj.get_branch(git_provider.repo_obj.default_branch)
             if not default_branch:
                 get_logger().error(f"Default branch {git_provider.repo_obj.default_branch} not found.")

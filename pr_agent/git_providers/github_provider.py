@@ -854,8 +854,8 @@ class GithubProvider(GitProvider):
         self.auth = None
         if self.deployment_type == 'app':
             try:
-                private_key = get_settings().get("GITHUB.PRIVATE_KEY")
-                app_id = get_settings().get("GITHUB.APP_ID")
+                private_key = get_settings().github.private_key
+                app_id = get_settings().github.app_id
             except AttributeError as e:
                 raise ValueError("GitHub app ID and private key are required when using GitHub app deployment") from e
             if not self.installation_id:
@@ -877,7 +877,7 @@ class GithubProvider(GitProvider):
             raise ValueError("Could not authenticate to GitHub")
 
     def _get_repo(self):
-        if hasattr(self, 'repo_obj') and \
+        if hasattr(self, 'repo_obj') and self.repo_obj is not None and \
                 hasattr(self.repo_obj, 'full_name') and \
                 self.repo_obj.full_name == self.repo:
             return self.repo_obj

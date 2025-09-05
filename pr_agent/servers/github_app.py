@@ -17,6 +17,7 @@ import os
 import re
 import uuid
 from typing import Any, Dict, Tuple
+from urllib.parse import urlparse
 
 import uvicorn
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
@@ -30,7 +31,8 @@ from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.utils import update_settings_from_args
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.git_providers import (get_git_provider,
-                                    get_git_provider_with_context)
+                                    get_git_provider_with_context,
+                                    get_git_provider_for_repo)
 from pr_agent.git_providers.git_provider import IncrementalPR
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.identity_providers import get_identity_provider
@@ -127,7 +129,6 @@ async def handle_comments_on_pr(body: Dict[str, Any],
         if '/ask' in comment_body and comment_body.strip().startswith('> ![image]'):
             comment_body_split = comment_body.split('/ask')
             comment_body = '/ask' + comment_body_split[1] +' \n' +comment_body_split[0].strip().lstrip('>')
-            get_logger().info(f"Reformatting comment_body so command is at the beginning: {comment_body}")
         else:
             get_logger().info("Ignoring comment not starting with /")
             return {}
@@ -442,6 +443,37 @@ async def handle_new_issue(body: Dict[str, Any],
         apply_repo_settings(api_url)
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Processing new issue {api_url=}")
+            if use_rag_engine:
+                try:
+                    # Extract the repository URL from the issue URL
+                    # Issue URL format: https://api.github.com/repos/{owner}/{repo}/issues/{number}
+                    repo_url_parts = api_url.split('/issues/')
+                    if len(repo_url_parts) > 1:
+                        repo_api_url = repo_url_parts[0]  # This is the repo API URL
+                        
+                        # Use the new function to get a properly initialized git provider with repository info
+                        provider = get_git_provider_for_repo(api_url)
+                        if not provider:
+                            get_logger().error(f"Git provider not found for issue URL {api_url}.")
+                            return {}
+                        
+                        # For issues, we should work with the default branch index
+                        # Since issues don't have a specific PR head branch
+                        index_name = ragIndexManager._get_repo_default_branch_index_name(provider)
+                        
+                        # Check if the index exists
+                        if not ragIndexManager._does_index_exist(index_name):
+                            # If not, create the base branch index
+                            get_logger().info(f"Index {index_name} does not exist, creating it now...")
+                            # Pass the full issue URL instead of just the repo URL
+                            # This ensures the git provider gets properly initialized
+                            await ragIndexManager.create_base_branch_index(api_url)
+                            get_logger().info(f"Index {index_name} created successfully")
+                    else:
+                        get_logger().error(f"Failed to extract repository URL from issue URL: {api_url}")
+                        
+                except Exception as e:
+                    get_logger().error(f"Failed to handle RAG operations for issue {api_url=}: {e}", exc_info=True)
             await _perform_auto_commands_github("issue_commands", agent, body, api_url, log_context)
         else:
             get_logger().info(f"User {sender=} is not eligible to process new issue {api_url=}")
