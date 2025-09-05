@@ -46,7 +46,7 @@ class LiteLLMAIHandler(BaseAiHandler):
         Raises a ValueError if the OpenAI key is missing.
         
         Args:
-            pr_rag_engine: Optional PRRagEngine instance for enhanced contextual responses.
+            pr_rag_engine: Optional PRRAGEngine instance for enhanced contextual responses.
         """
         self.azure = False
         self.api_base = None
@@ -301,7 +301,7 @@ class LiteLLMAIHandler(BaseAiHandler):
     )
     async def chat_completion(self, model: str, system: str, user: str, temperature: float = 0.2, img_path: str = None):
         """
-        Performs chat completion using either PRRagEngine (if available) or standard LLM completion.
+        Performs chat completion using either PRRAGEngine (if available) or standard LLM completion.
         
         Args:
             model (str): The model to use for completion
@@ -405,14 +405,18 @@ class LiteLLMAIHandler(BaseAiHandler):
                 get_logger().info(f"\nSystem prompt:\n{system}")
                 get_logger().info(f"\nUser prompt:\n{user}")
 
-            # If PRRagEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
+            # If PRRAGEngine is available, we want to add the branch index name to the kwargs to enhance contextual understanding
             if self.pr_rag_engine is not None:
-                if await self.pr_rag_engine.is_valid_pr_base_branch():
-                    get_logger().info(f"Base branch is valid for PR URL {self.pr_rag_engine.pr_url}. adding index name to request for RAG features.")
-                    kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
-                    kwargs["max_tokens"] = None # let the llm have the full context window
-
-            # Fall back to regular acompletion if PRRagEngine is not available or failed
+                try:
+                    if await self.pr_rag_engine.is_valid_pr_base_branch():
+                        get_logger().info(f"Base branch is valid for PR URL {self.pr_rag_engine.pr_url}. adding index name to request for RAG features.")
+                        kwargs["index_name"] = await self.pr_rag_engine.get_pr_head_index_name()
+                        kwargs["max_tokens"] = None # let the llm have the full context window
+                except Exception as rag_error:
+                    # If there's an error with RAG, log it but continue without RAG features
+                    get_logger().warning(f"Error setting up RAG features, continuing without RAG: {rag_error}")
+            
+            # Fall back to regular acompletion if PRRAGEngine is not available or failed
             response = await acompletion(**kwargs)
         except openai.RateLimitError as e:
             get_logger().error(f"Rate limit error during LLM inference: {e}")
@@ -422,21 +426,16 @@ class LiteLLMAIHandler(BaseAiHandler):
             raise
         except Exception as e:
             get_logger().warning(f"Unknown error during LLM inference: {e}")
-            raise openai.APIError from e
+            # Create a proper APIError with message and request
+            api_error = openai.APIError(message=str(e), request=None)
+            raise api_error
         if response is None or len(response["choices"]) == 0:
-            raise openai.APIError
+            # Create a proper APIError with message and request
+            api_error = openai.APIError(message="No response or empty choices from LLM", request=None)
+            raise api_error
         else:
             resp = response["choices"][0]['message']['content']
             finish_reason = response["choices"][0]["finish_reason"]
-            get_logger().debug(f"\nAI response:\n{resp}")
-
-            source_nodes = response.get("source_nodes", None)
-            if source_nodes:
-                get_logger().debug(f"Source nodes: {source_nodes}")
-
-            # log the full response for debugging
-            response_log = self.prepare_logs(response, system, user, resp, finish_reason)
-            get_logger().debug("Full_response", artifact=response_log)
 
             # for CLI debugging
             if get_settings().config.verbosity_level >= 2:

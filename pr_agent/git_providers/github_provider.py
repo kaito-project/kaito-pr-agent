@@ -57,6 +57,7 @@ class GithubProvider(GitProvider):
         self.pr_num = None
         self.pr = None
         self.issue_main = None
+        self.issue_num = None
         self.github_user_id = None
         self.diff_files = None
         self.git_files = None
@@ -84,6 +85,10 @@ class GithubProvider(GitProvider):
                                    f"not have a valid repository: {self.get_git_repo_url(issue_url)}")
                 return None
             # else: Valid repo handle:
+            # Store the repository object and issue number for later use
+            self.repo_obj = repo_obj
+            self.repo = repo_name
+            self.issue_num = issue_number
             return repo_obj.get_issue(issue_number)
         except Exception as e:
             get_logger().exception(f"Failed to get an issue object for issue: {issue_url}, belonging to owner/repo: {repo_name}")
@@ -207,6 +212,11 @@ class GithubProvider(GitProvider):
                 return self.comments[index]
 
     def get_files(self):
+        # When working with issues, not PRs, return an empty list
+        if self.pr is None and self.issue_num is not None:
+            get_logger().info(f"get_files() called in issue context for issue #{self.issue_num} - returning empty list")
+            return []
+            
         if self.incremental.is_incremental and self.unreviewed_files_set:
             return self.unreviewed_files_set.values()
         try:
@@ -844,8 +854,8 @@ class GithubProvider(GitProvider):
         self.auth = None
         if self.deployment_type == 'app':
             try:
-                private_key = get_settings().github.private_key
-                app_id = get_settings().github.app_id
+                private_key = get_settings().get("GITHUB.PRIVATE_KEY")
+                app_id = get_settings().get("GITHUB.APP_ID")
             except AttributeError as e:
                 raise ValueError("GitHub app ID and private key are required when using GitHub app deployment") from e
             if not self.installation_id:
@@ -867,7 +877,7 @@ class GithubProvider(GitProvider):
             raise ValueError("Could not authenticate to GitHub")
 
     def _get_repo(self):
-        if hasattr(self, 'repo_obj') and \
+        if hasattr(self, 'repo_obj') and self.repo_obj is not None and \
                 hasattr(self.repo_obj, 'full_name') and \
                 self.repo_obj.full_name == self.repo:
             return self.repo_obj

@@ -17,6 +17,7 @@ import os
 import re
 import uuid
 from typing import Any, Dict, Tuple
+from urllib.parse import urlparse
 
 import uvicorn
 from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
@@ -30,7 +31,8 @@ from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.algo.utils import update_settings_from_args
 from pr_agent.config_loader import get_settings, global_settings
 from pr_agent.git_providers import (get_git_provider,
-                                    get_git_provider_with_context)
+                                    get_git_provider_with_context,
+                                    get_git_provider_for_repo)
 from pr_agent.git_providers.git_provider import IncrementalPR
 from pr_agent.git_providers.utils import apply_repo_settings
 from pr_agent.identity_providers import get_identity_provider
@@ -127,11 +129,14 @@ async def handle_comments_on_pr(body: Dict[str, Any],
         if '/ask' in comment_body and comment_body.strip().startswith('> ![image]'):
             comment_body_split = comment_body.split('/ask')
             comment_body = '/ask' + comment_body_split[1] +' \n' +comment_body_split[0].strip().lstrip('>')
-            get_logger().info(f"Reformatting comment_body so command is at the beginning: {comment_body}")
         else:
             get_logger().info("Ignoring comment not starting with /")
             return {}
     disable_eyes = False
+    is_issue_comment = False
+    api_url = None
+    
+    # Handle comments on PRs
     if "issue" in body and "pull_request" in body["issue"] and "url" in body["issue"]["pull_request"]:
         api_url = body["issue"]["pull_request"]["url"]
     elif "comment" in body and "pull_request_url" in body["comment"]:
@@ -144,6 +149,11 @@ async def handle_comments_on_pr(body: Dict[str, Any],
                 disable_eyes = True
         except Exception as e:
             get_logger().error("Failed to get log context", artifact={'error': e})
+    # Handle comments on issues (new)
+    elif "issue" in body and "url" in body["issue"] and "pull_request" not in body["issue"]:
+        api_url = body["issue"]["url"]
+        is_issue_comment = True
+        log_context["issue_url"] = api_url
     else:
         return {}
     log_context["api_url"] = api_url
@@ -151,7 +161,33 @@ async def handle_comments_on_pr(body: Dict[str, Any],
     provider = get_git_provider_with_context(pr_url=api_url)
     with get_logger().contextualize(**log_context):
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
-            get_logger().info(f"Processing comment on PR {api_url=}, comment_body={comment_body}")
+            get_logger().info(f"Processing comment on {'issue' if is_issue_comment else 'PR'} {api_url=}, comment_body={comment_body}")
+            
+            # Special handling for /rag_edit on issue comments
+            if is_issue_comment and comment_body and comment_body.lstrip().startswith("/rag_edit"):
+                # Extract file path and RAG prompt from comment
+                file_path, rag_prompt = extract_rag_edit_args(comment_body)
+                
+                if not file_path:
+                    provider.publish_comment("Error: File path not provided. Usage: /rag_edit <file_path> <RAG prompt>")
+                    return {}
+                
+                # Get the original issue body to use as RAG context
+                issue_body = body.get("issue", {}).get("body", "")
+                
+                # Use the file_path from the comment, but the issue body as the RAG prompt
+                # This is the key change: we're using the original issue body as the RAG prompt context
+                try:
+                    from pr_agent.tools.pr_rag_edit import PRRagEdit
+                    rag_edit = PRRagEdit(issue_url=api_url, args=[file_path, issue_body])
+                    await rag_edit.run()
+                    return {}
+                except Exception as e:
+                    get_logger().error(f"Failed to process /rag_edit on issue comment: {e}")
+                    provider.publish_comment(f"Error processing /rag_edit: {str(e)}")
+                    return {}
+            
+            # For all other comment processing, continue as before
             if use_rag_engine:
                 try:
                     # we have to validate a pr index exists on comments in the event of rag restarts
@@ -160,10 +196,11 @@ async def handle_comments_on_pr(body: Dict[str, Any],
                         await ragIndexManager.create_new_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
+            
             await agent.handle_request(api_url, comment_body,
                         notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
         else:
-            get_logger().info(f"User {sender=} is not eligible to process comment on PR {api_url=}")
+            get_logger().info(f"User {sender=} is not eligible to process comment on {'issue' if is_issue_comment else 'PR'} {api_url=}")
 
 async def handle_new_pr_opened(body: Dict[str, Any],
                                event: str,
@@ -377,6 +414,50 @@ def should_process_pr_logic(body) -> bool:
     return True
 
 
+def normalize_file_path(file_path: str) -> str:
+    """
+    Normalize a file path to be relative to the repository root.
+    - If the path starts with '/', remove it
+    - If the path is empty, return empty
+    """
+    if not file_path:
+        return ""
+    # Remove leading slash if present
+    if file_path.startswith('/'):
+        file_path = file_path[1:]
+    return file_path
+
+
+def extract_rag_edit_args(issue_body: str) -> Tuple[str, str]:
+    """
+    Extract file path and RAG prompt from the issue body.
+    
+    Format expected:
+    /rag_edit <file_path> <RAG prompt>
+    """
+    # Get all content after the /rag_edit command
+    if not issue_body:
+        return "", ""
+        
+    # Extract the content after /rag_edit
+    match = re.search(r'/rag_edit\s+(.*?)(?:\r?\n|$)', issue_body, re.DOTALL)
+    if not match:
+        return "", ""
+    
+    command_content = match.group(1).strip()
+    
+    # Find the first space to separate file path from prompt
+    space_index = command_content.find(' ')
+    if space_index == -1:
+        # No space found, assume it's all file path
+        return normalize_file_path(command_content), ""
+    
+    file_path = command_content[:space_index].strip()
+    rag_prompt = command_content[space_index:].strip()
+    
+    return normalize_file_path(file_path), rag_prompt
+
+
 async def handle_new_issue(body: Dict[str, Any],
                            event: str,
                            sender: str,
@@ -398,6 +479,37 @@ async def handle_new_issue(body: Dict[str, Any],
         apply_repo_settings(api_url)
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
             get_logger().info(f"Processing new issue {api_url=}")
+            if use_rag_engine:
+                try:
+                    # Extract the repository URL from the issue URL
+                    # Issue URL format: https://api.github.com/repos/{owner}/{repo}/issues/{number}
+                    repo_url_parts = api_url.split('/issues/')
+                    if len(repo_url_parts) > 1:
+                        repo_api_url = repo_url_parts[0]  # This is the repo API URL
+                        
+                        # Use the new function to get a properly initialized git provider with repository info
+                        provider = get_git_provider_for_repo(api_url)
+                        if not provider:
+                            get_logger().error(f"Git provider not found for issue URL {api_url}.")
+                            return {}
+                        
+                        # For issues, we should work with the default branch index
+                        # Since issues don't have a specific PR head branch
+                        index_name = ragIndexManager._get_repo_default_branch_index_name(provider)
+                        
+                        # Check if the index exists
+                        if not ragIndexManager._does_index_exist(index_name):
+                            # If not, create the base branch index
+                            get_logger().info(f"Index {index_name} does not exist, creating it now...")
+                            # Pass the full issue URL instead of just the repo URL
+                            # This ensures the git provider gets properly initialized
+                            await ragIndexManager.create_base_branch_index(api_url)
+                            get_logger().info(f"Index {index_name} created successfully")
+                    else:
+                        get_logger().error(f"Failed to extract repository URL from issue URL: {api_url}")
+                        
+                except Exception as e:
+                    get_logger().error(f"Failed to handle RAG operations for issue {api_url=}: {e}", exc_info=True)
             await _perform_auto_commands_github("issue_commands", agent, body, api_url, log_context)
         else:
             get_logger().info(f"User {sender=} is not eligible to process new issue {api_url=}")
@@ -509,9 +621,48 @@ async def _perform_auto_commands_github(commands_conf: str, agent: PRAgent, body
         split_command = command.split(" ")
         command = split_command[0]
         args = split_command[1:]
+        
         if command == "/help_docs":
             issue_body = body.get("issue", {}).get("body", "")
             command = f"{command} {issue_body}"
+        elif command == "/rag_edit":
+            issue_body = body.get("issue", {}).get("body", "")
+            file_path, rag_prompt = extract_rag_edit_args(issue_body)
+            
+            # Validate file path and prompt
+            if not file_path:
+                # File path is required
+                git_provider = get_git_provider()(api_url)
+                git_provider.publish_comment("Error: File path not provided. Usage: /rag_edit <file_path> <RAG prompt>")
+                continue
+                
+            # Create a well-formed command that includes the file path and RAG prompt
+            command = f"{command} {file_path}"
+            if rag_prompt:
+                command = f"{command} {rag_prompt}"
+                
+            # Pre-check if file exists in the repository
+            try:
+                git_provider = get_git_provider()(api_url)
+                # Make sure repo_obj is available
+                if not git_provider.repo_obj:
+                    git_provider._get_repo()
+                
+                if hasattr(git_provider.repo_obj, 'default_branch'):
+                    default_branch = git_provider.repo_obj.default_branch
+                    file_exists = git_provider.get_pr_file_content(file_path, branch=default_branch)
+                    
+                    if not file_exists:
+                        git_provider.publish_comment(f"Error: File '{file_path}' not found in the repository.")
+                        continue
+                else:
+                    # Skip file existence check if repo_obj or default_branch is not available
+                    get_logger().warning(f"Could not verify file existence for {file_path}. Repository object not fully initialized.")
+            except Exception as e:
+                git_provider = get_git_provider()(api_url)
+                git_provider.publish_comment(f"Error checking file existence: {str(e)}")
+                continue
+        
         other_args = update_settings_from_args(args)
         new_command = ' '.join([command] + other_args)
         get_logger().info(f"{commands_conf}. Performing auto command '{new_command}', for {api_url=}")
