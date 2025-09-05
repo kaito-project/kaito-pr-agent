@@ -133,6 +133,10 @@ async def handle_comments_on_pr(body: Dict[str, Any],
             get_logger().info("Ignoring comment not starting with /")
             return {}
     disable_eyes = False
+    is_issue_comment = False
+    api_url = None
+    
+    # Handle comments on PRs
     if "issue" in body and "pull_request" in body["issue"] and "url" in body["issue"]["pull_request"]:
         api_url = body["issue"]["pull_request"]["url"]
     elif "comment" in body and "pull_request_url" in body["comment"]:
@@ -145,6 +149,11 @@ async def handle_comments_on_pr(body: Dict[str, Any],
                 disable_eyes = True
         except Exception as e:
             get_logger().error("Failed to get log context", artifact={'error': e})
+    # Handle comments on issues (new)
+    elif "issue" in body and "url" in body["issue"] and "pull_request" not in body["issue"]:
+        api_url = body["issue"]["url"]
+        is_issue_comment = True
+        log_context["issue_url"] = api_url
     else:
         return {}
     log_context["api_url"] = api_url
@@ -152,7 +161,33 @@ async def handle_comments_on_pr(body: Dict[str, Any],
     provider = get_git_provider_with_context(pr_url=api_url)
     with get_logger().contextualize(**log_context):
         if get_identity_provider().verify_eligibility("github", sender_id, api_url) is not Eligibility.NOT_ELIGIBLE:
-            get_logger().info(f"Processing comment on PR {api_url=}, comment_body={comment_body}")
+            get_logger().info(f"Processing comment on {'issue' if is_issue_comment else 'PR'} {api_url=}, comment_body={comment_body}")
+            
+            # Special handling for /rag_edit on issue comments
+            if is_issue_comment and comment_body and comment_body.lstrip().startswith("/rag_edit"):
+                # Extract file path and RAG prompt from comment
+                file_path, rag_prompt = extract_rag_edit_args(comment_body)
+                
+                if not file_path:
+                    provider.publish_comment("Error: File path not provided. Usage: /rag_edit <file_path> <RAG prompt>")
+                    return {}
+                
+                # Get the original issue body to use as RAG context
+                issue_body = body.get("issue", {}).get("body", "")
+                
+                # Use the file_path from the comment, but the issue body as the RAG prompt
+                # This is the key change: we're using the original issue body as the RAG prompt context
+                try:
+                    from pr_agent.tools.pr_rag_edit import PRRagEdit
+                    rag_edit = PRRagEdit(issue_url=api_url, args=[file_path, issue_body])
+                    await rag_edit.run()
+                    return {}
+                except Exception as e:
+                    get_logger().error(f"Failed to process /rag_edit on issue comment: {e}")
+                    provider.publish_comment(f"Error processing /rag_edit: {str(e)}")
+                    return {}
+            
+            # For all other comment processing, continue as before
             if use_rag_engine:
                 try:
                     # we have to validate a pr index exists on comments in the event of rag restarts
@@ -161,10 +196,11 @@ async def handle_comments_on_pr(body: Dict[str, Any],
                         await ragIndexManager.create_new_pr_index(api_url)
                 except Exception as e:
                     get_logger().error(f"Failed to create new PR index for {api_url=}: {e}")
+            
             await agent.handle_request(api_url, comment_body,
                         notify=lambda: provider.add_eyes_reaction(comment_id, disable_eyes=disable_eyes))
         else:
-            get_logger().info(f"User {sender=} is not eligible to process comment on PR {api_url=}")
+            get_logger().info(f"User {sender=} is not eligible to process comment on {'issue' if is_issue_comment else 'PR'} {api_url=}")
 
 async def handle_new_pr_opened(body: Dict[str, Any],
                                event: str,
