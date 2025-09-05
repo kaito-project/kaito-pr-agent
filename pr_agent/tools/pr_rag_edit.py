@@ -21,7 +21,7 @@ from jinja2 import Environment, StrictUndefined
 from pr_agent.algo.ai_handlers.base_ai_handler import BaseAiHandler
 from pr_agent.algo.ai_handlers.litellm_ai_handler import LiteLLMAIHandler
 from pr_agent.config_loader import get_settings
-from pr_agent.git_providers import get_git_provider, get_git_provider_for_repo
+from pr_agent.git_providers import get_git_provider
 from pr_agent.git_providers.git_provider import get_main_pr_language
 from pr_agent.log import get_logger
 
@@ -29,13 +29,7 @@ from pr_agent.log import get_logger
 class PRRagEdit:
     def __init__(self, issue_url: str, args=None, ai_handler: partial[BaseAiHandler,] = LiteLLMAIHandler):
         self.issue_url = issue_url
-        
-        # Use the new function to get a properly initialized git provider with repository info
-        try:
-            self.git_provider = get_git_provider_for_repo(issue_url)
-        except Exception as e:
-            get_logger().error(f"Failed to initialize git provider with URL {issue_url}: {str(e)}")
-            raise e
+        self.git_provider = get_git_provider()(issue_url)
         
         # Parse arguments
         self.file_path, self.rag_prompt = self.parse_args(args)
@@ -56,27 +50,8 @@ class PRRagEdit:
                 self.git_provider.get_files()
             )
         
-        # Initialize AI handler with RAG engine
-        from pr_agent.tools.pr_rag_engine import PRRAGEngine
-        from pr_agent.tools.pr_rag_index_manager import PRRAGIndexManager
-        from pr_agent.config_loader import get_settings
-        
-        # Create RAG Index Manager and Engine
-        index_manager = PRRAGIndexManager(
-            base_url=get_settings().get("KAITORAGENGINE.RAG_ENGINE_URL", ""),
-            enabled_base_branches=get_settings().get("KAITORAGENGINE.ENABLED_BASE_BRANCHES", []),
-            ignore_directories=get_settings().get("KAITORAGENGINE.IGNORE_DIRECTORIES", []),
-        )
-        pr_rag_engine = PRRAGEngine(index_manager, self.issue_url)
-        
-        # Initialize AI handler - handle both cases where the handler might or might not accept pr_rag_engine
-        try:
-            self.ai_handler = ai_handler(pr_rag_engine=pr_rag_engine)
-        except (TypeError, ValueError):
-            # Fall back to initializing without parameters if the handler doesn't accept pr_rag_engine
-            get_logger().warning("AI handler doesn't accept pr_rag_engine parameter, initializing without it")
-            self.ai_handler = ai_handler()
-            
+        # Initialize AI handler
+        self.ai_handler = ai_handler()
         self.ai_handler.main_pr_language = self.main_language
         
     def normalize_file_path(self, file_path: str) -> str:
@@ -120,6 +95,9 @@ class PRRagEdit:
                 if get_settings().config.publish_output:
                     self.git_provider.publish_comment("Error: RAG prompt not provided. Usage: /rag_edit <file_path> <RAG prompt>")
                 return
+            
+            # Log start of operation
+            get_logger().info(f"Starting RAG edit for file {self.file_path}")
             
             if get_settings().config.publish_output:
                 self.git_provider.publish_comment(

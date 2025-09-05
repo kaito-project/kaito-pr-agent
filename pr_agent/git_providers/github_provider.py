@@ -854,8 +854,8 @@ class GithubProvider(GitProvider):
         self.auth = None
         if self.deployment_type == 'app':
             try:
-                private_key = get_settings().github.private_key
-                app_id = get_settings().github.app_id
+                private_key = get_settings().get("GITHUB.PRIVATE_KEY")
+                app_id = get_settings().get("GITHUB.APP_ID")
             except AttributeError as e:
                 raise ValueError("GitHub app ID and private key are required when using GitHub app deployment") from e
             if not self.installation_id:
