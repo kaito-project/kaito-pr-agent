@@ -436,6 +436,15 @@ class LiteLLMAIHandler(BaseAiHandler):
         else:
             resp = response["choices"][0]['message']['content']
             finish_reason = response["choices"][0]["finish_reason"]
+            get_logger().debug(f"\nAI response:\n{resp}")
+
+            source_nodes = response.get("source_nodes", None)
+            if source_nodes:
+                get_logger().debug(f"Source nodes: {source_nodes}")
+
+            # log the full response for debugging
+            response_log = self.prepare_logs(response, system, user, resp, finish_reason)
+            get_logger().debug("Full_response", artifact=response_log)
 
             # for CLI debugging
             if get_settings().config.verbosity_level >= 2:
