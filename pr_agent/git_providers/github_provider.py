@@ -724,6 +724,11 @@ class GithubProvider(GitProvider):
         return languages
 
     def get_pr_branch(self):
+        if not hasattr(self, 'pr') or self.pr is None:
+            # If PR doesn't exist (e.g., issue URL), use the default branch
+            if hasattr(self, 'repo_obj') and self.repo_obj is not None:
+                return self.repo_obj.default_branch
+            return "main"  # Fallback to "main" if repo_obj is also not available
         return self.pr.head.ref
 
     def get_pr_owner_id(self) -> str | None:
