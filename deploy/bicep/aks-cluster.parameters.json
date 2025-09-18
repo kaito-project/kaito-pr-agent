@@ -1,0 +1,117 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "kaito-dogfood"
+    },
+    "clusterName": {
+      "value": "kaito-dogfood"
+    },
+    "location": {
+      "value": "westeurope"
+    },
+    "kubernetesVersion": {
+      "value": "1.32.6"
+    },
+    "skuTier": {
+      "value": "Standard"
+    },
+    "enableRBAC": {
+      "value": true
+    },
+    "enableWorkloadIdentity": {
+      "value": true
+    },
+    "enableOIDCIssuer": {
+      "value": true
+    },
+    "enableAzurePolicy": {
+      "value": true
+    },
+    "enableOmsAgent": {
+      "value": true
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "value": "/subscriptions/ff05f55d-22b5-44a7-b704-f9a8efd493ed/resourcegroups/DefaultResourceGroup-WEU/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-ff05f55d-22b5-44a7-b704-f9a8efd493ed-WEU"
+    },
+    "systemNodePool": {
+      "value": {
+        "name": "agentpool",
+        "count": 2,
+        "minCount": 2,
+        "maxCount": 5,
+        "vmSize": "Standard_D8ds_v5",
+        "osDiskSizeGB": 300,
+        "osDiskType": "Ephemeral",
+        "enableAutoScaling": true,
+        "availabilityZones": ["1", "2", "3"],
+        "nodeTaints": ["CriticalAddonsOnly=true:NoSchedule"],
+        "maxPods": 110
+      }
+    },
+    "userNodePool": {
+      "value": {
+        "name": "userpool",
+        "count": 2,
+        "minCount": 2,
+        "maxCount": 5,
+        "vmSize": "Standard_D8ds_v5",
+        "osDiskSizeGB": 300,
+        "osDiskType": "Ephemeral",
+        "enableAutoScaling": true,
+        "availabilityZones": ["1", "2", "3"],
+        "maxPods": 110
+      }
+    },
+    "networkProfile": {
+      "value": {
+        "networkPlugin": "azure",
+        "networkPluginMode": "overlay",
+        "networkPolicy": "none",
+        "networkDataplane": "azure",
+        "loadBalancerSku": "Standard",
+        "podCidr": "10.244.0.0/16",
+        "serviceCidr": "10.0.0.0/16",
+        "dnsServiceIP": "10.0.0.10",
+        "outboundType": "loadBalancer"
+      }
+    },
+    "autoScalerProfile": {
+      "value": {
+        "balance-similar-node-groups": "false",
+        "expander": "random",
+        "max-empty-bulk-delete": "10",
+        "max-graceful-termination-sec": "600",
+        "max-node-provision-time": "15m",
+        "max-total-unready-percentage": "45",
+        "new-pod-scale-up-delay": "0s",
+        "ok-total-unready-count": "3",
+        "scale-down-delay-after-add": "10m",
+        "scale-down-delay-after-delete": "10s",
+        "scale-down-delay-after-failure": "3m",
+        "scale-down-unneeded-time": "10m",
+        "scale-down-unready-time": "20m",
+        "scale-down-utilization-threshold": "0.5",
+        "scan-interval": "10s",
+        "skip-nodes-with-local-storage": "false",
+        "skip-nodes-with-system-pods": "true"
+      }
+    },
+    "albSubnetAddressPrefix": {
+      "value": "10.245.0.0/24"
+    },
+    "albIdentityName": {
+      "value": "azure-alb-identity"
+    },
+    "kaitoProvisionerIdentityName": {
+      "value": "kaitoprovisioner"
+    },
+    "kaitoServiceAccountNamespace": {
+      "value": "gpu-provisioner"
+    },
+    "kaitoServiceAccountName": {
+      "value": "gpu-provisioner"
+    }
+  }
+}
