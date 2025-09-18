@@ -12,4 +12,9 @@ spec:
     local:
       modelID: "BAAI/bge-small-en-v1.5"
   inferenceService:
-    url: "http://workspace-qwen-2-5-coder-32b-instruct.default.svc/v1/chat/completions"
+    # You can change this if you use a different KAITO workspace model or remote inference url
+    url: "http://workspace-qwen-2-5-coder-32b-instruct.default.svc.cluster.local/v1/chat/completions"
+    # Similarly you update this value to reflect your models context window size
+    contextWindowSize: 32786
+    # Optional secret for remote inference
+    # accessSecret: kaito-ragengine-secret

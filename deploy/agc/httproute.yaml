@@ -6,7 +6,7 @@ metadata:
 spec:
   parentRefs:
     - name: pr-agent-gateway
-      namespace: default
+      namespace: alb-infra
   rules:
     # Rule for GET requests to /
     - matches:
