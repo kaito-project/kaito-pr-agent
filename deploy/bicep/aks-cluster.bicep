@@ -32,9 +32,6 @@ param enableAzurePolicy bool = true
 @description('Enable OMS Agent (Azure Monitor)')
 param enableOmsAgent bool = true
 
-@description('Log Analytics Workspace Resource ID for monitoring')
-param logAnalyticsWorkspaceResourceId string
-
 @description('Name for the Azure ALB managed identity')
 param albIdentityName string = 'azure-alb-identity'
 
@@ -262,15 +259,6 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2025-02-01' = {
       }
       azurepolicy: {
         enabled: enableAzurePolicy
-      }
-      omsAgent: enableOmsAgent ? {
-        enabled: true
-        config: {
-          logAnalyticsWorkspaceResourceID: logAnalyticsWorkspaceResourceId
-          useAADAuth: 'true'
-        }
-      } : {
-        enabled: false
       }
     }
 
