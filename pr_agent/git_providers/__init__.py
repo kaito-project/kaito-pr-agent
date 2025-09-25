@@ -77,3 +77,60 @@ def get_git_provider_with_context(pr_url) -> GitProvider:
             return git_provider
         except Exception as e:
             raise ValueError(f"Failed to get git provider for {pr_url}") from e
+            
+            
+def get_git_provider_for_repo(url: str) -> GitProvider:
+    """
+    Get a GitProvider instance for a repository URL, PR URL, or issue URL.
+    
+    If the URL is an issue URL or API URL, it will extract the repository information
+    and properly initialize the provider with the repository name and object.
+    This ensures that when working with issues or API URLs, we properly set up the provider
+    with all necessary repository information.
+    
+    Args:
+        url: The URL of the repository, PR, or issue.
+    
+    Returns:
+        A GitProvider instance initialized with the repository information.
+    """
+    from urllib.parse import urlparse
+    from pr_agent.log import get_logger
+    
+    # Get the appropriate provider class
+    provider_class = get_git_provider()
+    
+    try:
+        # Initialize the provider with the URL
+        provider = provider_class(url)
+        
+        # If this is an issue URL, handle repository extraction
+        if '/issues/' in url:
+            # Extract the repository URL from the issue URL
+            repo_url = url.split('/issues/')[0]
+            get_logger().info(f"Extracted repository URL {repo_url} from issue URL")
+            
+            # For API URLs, extract repository name from path
+            parsed_url = urlparse(url)
+            path_parts = parsed_url.path.strip('/').split('/')
+            
+            # Handle different URL formats
+            repo_name = None
+            if 'api.github.com' in parsed_url.netloc and len(path_parts) >= 3 and path_parts[0] == 'repos':
+                # API URL format: https://api.github.com/repos/{owner}/{repo}
+                repo_name = '/'.join(path_parts[1:3])  # owner/repo format
+            elif len(path_parts) >= 2 and '/issues/' in url:
+                # Regular URL format: https://github.com/{owner}/{repo}/issues/{num}
+                repo_name = '/'.join(path_parts[:2])
+                
+            # Set repository properties if we extracted a name
+            if repo_name and hasattr(provider, 'repo') and hasattr(provider, 'github_client'):
+                # Set repository properties properly
+                provider.repo = repo_name
+                provider.repo_obj = provider.github_client.get_repo(repo_name)
+                
+        return provider
+    except Exception as e:
+        get_logger().error(f"Failed to initialize git provider with URL {url}: {str(e)}")
+        # If initialization fails completely, re-raise the exception
+        raise e

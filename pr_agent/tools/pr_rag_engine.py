@@ -15,7 +15,7 @@ RAG_BUFFER_TOKENS = get_settings().config.get("KAITORAGENGINE.TOKEN_BUFFER", 250
 
 class PRRAGEngine:
     '''
-    PRRagEngine is responsible for querying the Retrieval-Augmented Generation (RAG) Engine.
+    PRRAGEngine is responsible for querying the Retrieval-Augmented Generation (RAG) Engine.
     '''
     def __init__(self, index_manager: PRRAGIndexManager, pr_url: str):
         self.index_manager = index_manager
