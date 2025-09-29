@@ -20,32 +20,12 @@ module albSubnetModule 'modules/alb-subnet-creation.bicep' = {
   params: {
     vnetName: aksVnetName
     albSubnetAddressPrefix: albSubnetAddressPrefix
+    albIdentityPrincipalId: albIdentityPrincipalId
+    albIdentityResourceId: albIdentityResourceId
   }
 }
 
-// ALB Identity role assignments
-
-// 1. AppGw for Containers Configuration Manager role assignment for ALB identity (in current resource group)
-resource albIdentityAppGwConfigManagerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, albIdentityResourceId, 'fbc52c3f-28ad-4303-a892-8a056630b8f1')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'fbc52c3f-28ad-4303-a892-8a056630b8f1') // AppGw for Containers Configuration Manager
-    principalId: albIdentityPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// 2. Reader role assignment for ALB identity (in current resource group)
-resource albIdentityReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, albIdentityResourceId, 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7') // Reader
-    principalId: albIdentityPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// 2. Deploy role assignments using module in node resource group scope
+// Deploy role assignments using module in node resource group scope
 module albRoleAssignmentsModule 'modules/alb-role-assignments.bicep' = {
   scope: resourceGroup(subscription().subscriptionId, nodeResourceGroup)
   name: 'albRoleAssignmentsDeployment'
@@ -65,13 +45,14 @@ param kaitoProvisionerIdentityResourceId string = ''
 @description('The AKS cluster resource ID')
 param clusterResourceId string
 
-resource kaitoProvisionerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (kaitoProvisionerIdentityPrincipalId != '') {
-  scope: resourceGroup()
-  name: guid(clusterResourceId, kaitoProvisionerIdentityResourceId, 'b24988ac-6180-42a0-ab88-20f7382dd24c')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c') // AKS Contributor
-    principalId: kaitoProvisionerIdentityPrincipalId
-    principalType: 'ServicePrincipal'
+// Deploy role assignments using module in cluster resource group scope
+module provisionerRoleAssignment 'modules/provisioner-role-assignment.bicep' = {
+  scope: resourceGroup(split(clusterResourceId, '/')[2], split(clusterResourceId, '/')[4]) // Extract subscription and RG from cluster resource ID
+  name: 'provisionerRoleAssignmentDeployment'
+  params: {
+    kaitoProvisionerIdentityPrincipalId: kaitoProvisionerIdentityPrincipalId
+    kaitoProvisionerIdentityResourceId: kaitoProvisionerIdentityResourceId
+    clusterResourceId: clusterResourceId
   }
 }
 
@@ -81,12 +62,11 @@ output albSubnetName string = albSubnetModule.outputs.albSubnetName
 output albSubnetAddressPrefix string = albSubnetModule.outputs.albSubnetAddressPrefix
 
 @description('Role assignment IDs')
-output albIdentityAppGwConfigManagerRoleAssignmentId string = albIdentityAppGwConfigManagerRoleAssignment.id
-output albIdentityReaderRoleAssignmentId string = albIdentityReaderRoleAssignment.id
-output albNetworkContributorRoleAssignmentId string = albRoleAssignmentsModule.outputs.albNetworkContributorRoleAssignmentId
+output albIdentityAppGwConfigManagerRoleAssignmentId string = albRoleAssignmentsModule.outputs.albIdentityAppGwConfigManagerRoleAssignmentId
+output albIdentityReaderRoleAssignmentId string = albRoleAssignmentsModule.outputs.albIdentityReaderRoleAssignmentId
 
 @description('The Kaito provisioner role assignment ID (if created)')
-output kaitoProvisionerRoleAssignmentId string = kaitoProvisionerIdentityPrincipalId != '' ? kaitoProvisionerRoleAssignment.id : ''
+output kaitoProvisionerRoleAssignmentId string = kaitoProvisionerIdentityPrincipalId != '' ? provisionerRoleAssignment.outputs.kaitoProvisionerRoleAssignmentId : ''
 
 @description('Node resource group')
 output nodeResourceGroup string = nodeResourceGroup

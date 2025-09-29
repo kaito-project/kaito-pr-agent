@@ -80,7 +80,8 @@ echo "Validating AKS cluster Bicep template..."
 az deployment group validate \
     --resource-group "$RESOURCE_GROUP" \
     --template-file "$TEMPLATE_FILE" \
-    --parameters "@$PARAMETERS_FILE"
+    --parameters "@$PARAMETERS_FILE" \
+    --debug
 
 # Validate ALB template if not skipping
 if [[ "$SKIP_ALB" == false ]]; then
@@ -88,6 +89,7 @@ if [[ "$SKIP_ALB" == false ]]; then
     az deployment group validate \
         --resource-group "$RESOURCE_GROUP" \
         --template-file "$ALB_TEMPLATE_FILE" \
+        --debug \
         --parameters \
             nodeResourceGroup="$RESOURCE_GROUP" \
             albIdentityPrincipalId="00000000-0000-0000-0000-000000000000" \

@@ -32,9 +32,6 @@
     "enableOmsAgent": {
       "value": true
     },
-    "logAnalyticsWorkspaceResourceId": {
-      "value": "/subscriptions/ff05f55d-22b5-44a7-b704-f9a8efd493ed/resourcegroups/DefaultResourceGroup-WEU/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-ff05f55d-22b5-44a7-b704-f9a8efd493ed-WEU"
-    },
     "systemNodePool": {
       "value": {
         "name": "agentpool",
