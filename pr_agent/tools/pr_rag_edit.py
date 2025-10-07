@@ -202,20 +202,8 @@ class PRRagEdit:
     def _create_or_update_file(self, file_path: str, branch_name: str, base_branch: str, 
                               content: str, commit_message: str) -> None:
         """Create or update a file in a specific branch"""
-        # First create the branch if it doesn't exist
         try:
-            # We need to create the branch from the base branch
-            base_branch_ref = self.git_provider.repo_obj.get_git_ref(f"heads/{base_branch}")
-            base_sha = base_branch_ref.object.sha
-            
-            # Try to create the branch
-            try:
-                self.git_provider.repo_obj.create_git_ref(f"refs/heads/{branch_name}", base_sha)
-            except Exception as e:
-                # Branch might already exist, which is fine
-                get_logger().warning(f"Could not create branch {branch_name}, it might already exist: {e}")
-            
-            # Now update the file in that branch
+            # The GitHub API update_file method can create branches if they don't exist
             self.git_provider.create_or_update_pr_file(
                 file_path=file_path,
                 branch=branch_name,
