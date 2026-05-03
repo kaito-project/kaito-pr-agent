@@ -754,33 +754,26 @@ def try_fix_yaml(response_text: str,
             if key in response_text_lines_copy[i] and not '|' in response_text_lines_copy[i]:
                 response_text_lines_copy[i] = response_text_lines_copy[i].replace(f'{key}',
                                                                                   f'{key} |\n        ')
-    try:
+try:
         data = yaml.safe_load('\n'.join(response_text_lines_copy))
-        get_logger().info(f"Successfully parsed AI prediction after adding |-\n")
+        get_logger().info(f"Successfully parsed AI prediction after adding |-")
         return data
-    except:
-        pass
+    except yaml.YAMLError as e:
+        get_logger().debug(f"YAML parse attempt 1 failed: {e}")
+    except Exception as e:
+        get_logger().debug(f"Unexpected error in YAML parse attempt 1: {e}")
 
     # 1.5 fallback - try to convert '|' to '|2'. Will solve cases of indent decreasing during the code
     response_text_copy = copy.deepcopy(response_text)
     response_text_copy = response_text_copy.replace('|\n', '|2\n')
-    try:
+try:
         data = yaml.safe_load(response_text_copy)
         get_logger().info(f"Successfully parsed AI prediction after replacing | with |2")
         return data
-    except:
-        # if it fails, we can try to add spaces to the lines that are not indented properly, and contain '}'.
-        response_text_lines_copy = response_text_copy.split('\n')
-        for i in range(0, len(response_text_lines_copy)):
-            initial_space = len(response_text_lines_copy[i]) - len(response_text_lines_copy[i].lstrip())
-            if initial_space == 2 and '|2' not in response_text_lines_copy[i] and '}' in response_text_lines_copy[i]:
-                response_text_lines_copy[i] = '    ' + response_text_lines_copy[i].lstrip()
-        try:
-            data = yaml.safe_load('\n'.join(response_text_lines_copy))
-            get_logger().info(f"Successfully parsed AI prediction after replacing | with |2 and adding spaces")
-            return data
-        except:
-            pass
+    except yaml.YAMLError as e:
+        get_logger().debug(f"YAML parse attempt 1.5 failed: {e}")
+    except Exception as e:
+        get_logger().debug(f"Unexpected error in YAML parse attempt 1.5: {e}")
 
     # second fallback - try to extract only range from first ```yaml to the last ```
     snippet_pattern = r'```yaml([\s\S]*?)```(?=\s*$|")'
@@ -803,8 +796,10 @@ def try_fix_yaml(response_text: str,
         data = yaml.safe_load(response_text_copy)
         get_logger().info(f"Successfully parsed AI prediction after removing curly brackets")
         return data
-    except:
-        pass
+    except yaml.YAMLError as e:
+        get_logger().debug(f"YAML parse attempt 3 failed: {e}")
+    except Exception as e:
+        get_logger().debug(f"Unexpected error in YAML parse attempt 3: {e}")
 
 
     # forth fallback - try to extract yaml snippet by 'first_key' and 'last_key'
@@ -823,20 +818,24 @@ def try_fix_yaml(response_text: str,
             data = yaml.safe_load(response_text_copy)
             get_logger().info(f"Successfully parsed AI prediction after extracting yaml snippet")
             return data
-        except:
-            pass
+        except yaml.YAMLError as e:
+            get_logger().debug(f"YAML parse attempt 4 failed: {e}")
+        except Exception as e:
+            get_logger().debug(f"Unexpected error in YAML parse attempt 4: {e}")
 
     # fifth fallback - try to remove leading '+' (sometimes added by AI for 'existing code' and 'improved code')
     response_text_lines_copy = response_text_lines.copy()
     for i in range(0, len(response_text_lines_copy)):
         if response_text_lines_copy[i].startswith('+'):
             response_text_lines_copy[i] = ' ' + response_text_lines_copy[i][1:]
-    try:
-        data = yaml.safe_load('\n'.join(response_text_lines_copy))
-        get_logger().info(f"Successfully parsed AI prediction after removing leading '+'")
-        return data
-    except:
-        pass
+try:
+            data = yaml.safe_load('\n'.join(response_text_lines_copy))
+            get_logger().info(f"Successfully parsed AI prediction after replacing | with |2 and adding spaces")
+            return data
+        except yaml.YAMLError as e:
+            get_logger().debug(f"YAML parse attempt 5 failed: {e}")
+        except Exception as e:
+            get_logger().debug(f"Unexpected error in YAML parse attempt 5: {e}")
 
     # sixth fallback - replace tabs with spaces
     if '\t' in response_text:
@@ -846,8 +845,10 @@ def try_fix_yaml(response_text: str,
             data = yaml.safe_load(response_text_copy)
             get_logger().info(f"Successfully parsed AI prediction after replacing tabs with spaces")
             return data
-        except:
-            pass
+        except yaml.YAMLError as e:
+            get_logger().debug(f"YAML parse attempt 6 failed: {e}")
+        except Exception as e:
+            get_logger().debug(f"Unexpected error in YAML parse attempt 6: {e}")
 
     # seventh fallback - add indent for sections of code blocks
     response_text_copy = copy.deepcopy(response_text)
@@ -865,8 +866,10 @@ def try_fix_yaml(response_text: str,
         data = yaml.safe_load(response_text_copy)
         get_logger().info(f"Successfully parsed AI prediction after adding indent for sections of code blocks")
         return data
-    except:
-        pass
+    except yaml.YAMLError as e:
+        get_logger().debug(f"YAML parse attempt 7 failed: {e}")
+    except Exception as e:
+        get_logger().debug(f"Unexpected error in YAML parse attempt 7: {e}")
 
     # # sixth fallback - try to remove last lines
     # for i in range(1, len(response_text_lines)):
